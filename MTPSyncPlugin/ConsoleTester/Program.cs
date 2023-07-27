@@ -1,9 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using MTPSync;
+using Gio;
 
 namespace ConsoleApp1
 {
@@ -11,11 +8,16 @@ namespace ConsoleApp1
     {
         static void Main(string[] args)
         {
-            var swirp = new MTPSyncExt();
-            
-            Console.WriteLine(
-                swirp.SyncDatabases()
-            );
+
+            var gioDerper = new MTPSync.MediaDeviceClient();
+
+
+            foreach(var item in gioDerper.List(""))
+            {
+                Console.WriteLine(
+                    item
+                );
+            }
 
         }
     }

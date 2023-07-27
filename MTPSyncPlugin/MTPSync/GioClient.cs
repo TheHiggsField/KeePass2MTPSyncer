@@ -4,7 +4,7 @@ using System.Diagnostics;
 
 namespace Gio
 {
-    public class GioClient
+    public class GioClient: MTPSync.MTPAccess
     {
         public List<string> Output {get; set;} = new List<string>();
         public List<string> Error {get; set;} = new List<string>();

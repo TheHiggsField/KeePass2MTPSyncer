@@ -15,9 +15,9 @@ using Gio;
 namespace MTPSync
 {
 
-    class MTPSyncer
+    public class MTPSyncer
     {
-        private GioClient gioClient = null;
+        private MTPAccess gioClient = null;
 
         private MainForm mainWindow = null;
         
