@@ -9,12 +9,17 @@ namespace Gio
         public List<string> Output {get; set;} = new List<string>();
         public List<string> Error {get; set;} = new List<string>();
 
-        public bool Move(string mtpSourcePath, string destinationPath)
+        public bool Copy(string mtpSourcePath, string destinationPath)
         {
-            return Run($"move \"{mtpSourcePath}\" \"{destinationPath}\"");
+            return Run($"copy \"{mtpSourcePath}\" \"{destinationPath}\"");
         }
 
-        public bool Copy(string mtpSourcePath, string destinationPath)
+        public bool Download(string mtpSourcePath, string destinationPath)
+        {
+            return Run($"copy \"{mtpSourcePath}\" \"{destinationPath}\"");
+        }
+
+        public bool Upload(string mtpSourcePath, string destinationPath)
         {
             return Run($"copy \"{mtpSourcePath}\" \"{destinationPath}\"");
         }

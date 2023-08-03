@@ -60,7 +60,7 @@ namespace MTPSync
 
                 if (wasCoppiedFromPhone && wasSynced)
                 {
-                    wasCoppiedToPhone = gioClient.Copy(tempFolder + filename, mtpSourceFolder + filename);
+                    wasCoppiedToPhone = gioClient.Upload(tempFolder + filename, mtpSourceFolder + filename);
                 }
 
                 Console.WriteLine("Syncing: " + filename + $"\t\tPhone->PC {boolToMessage(wasCoppiedFromPhone && wasSynced)}\tPC->Phone {boolToMessage(wasCoppiedToPhone)}");
@@ -89,7 +89,7 @@ namespace MTPSync
             bool success = true;
             foreach (var filename in DBNames)
             {
-                bool wasCoppied = gioClient.Copy(mtpSourceFolder + filename, tempFolder + filename);
+                bool wasCoppied = gioClient.Download(mtpSourceFolder + filename, tempFolder + filename);
 
                 if (wasCoppied)
                     sucessfullyCoppied.Add(filename);

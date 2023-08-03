@@ -30,13 +30,31 @@ namespace MTPSync
             }
         }
 
-        public bool Copy(string sourcePath, string destinationPath)
+        public bool Download(string sourcePath, string destinationPath)
         {
             try
             {
                 using (FileStream stream = File.OpenWrite(destinationPath))
                 {
                     device.DownloadFile(sourcePath, stream);
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Copy error: {ex.Message}");
+                return false;
+            }
+        }
+
+        public bool Upload(string sourcePath, string mtpPath)
+        {
+            try
+            {
+                using (FileStream stream = File.OpenWrite(sourcePath))
+                {
+                    device.UploadFile(sourcePath, mtpPath);
                 }
 
                 return true;

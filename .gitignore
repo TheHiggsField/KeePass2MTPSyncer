@@ -4,6 +4,7 @@
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
 MTPSyncPlugin/KeePass-2.54.sample/
+MTPSyncPlugin/WindowsFormsApp1/
 *.zip
 
 
