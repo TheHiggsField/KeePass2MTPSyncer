@@ -17,7 +17,11 @@ namespace MTPSync
 
     public class MTPSyncer
     {
-        private MTPAccess gioClient = null;
+        /*
+        [System.Runtime.InteropServices.DllImport("kernel32.dll", SetLastError = true)]
+        static extern bool AllocConsole();
+        */
+        private MTPAccess mtpClient = null;
 
         private MainForm mainWindow = null;
         
@@ -27,8 +31,9 @@ namespace MTPSync
 
         public MTPSyncer(string mtpfolderUri, MainForm _mainForm)
         {
-            
-            gioClient = new GioClient();
+
+            //AllocConsole();
+            mtpClient = new MediaDeviceClient();
             mtpSourceFolder = mtpfolderUri;
 
             mainWindow = _mainForm;
@@ -60,7 +65,7 @@ namespace MTPSync
 
                 if (wasCoppiedFromPhone && wasSynced)
                 {
-                    wasCoppiedToPhone = gioClient.Upload(tempFolder + filename, mtpSourceFolder + filename);
+                    wasCoppiedToPhone = mtpClient.Upload(tempFolder + filename, mtpSourceFolder + filename);
                 }
 
                 Console.WriteLine("Syncing: " + filename + $"\t\tPhone->PC {boolToMessage(wasCoppiedFromPhone && wasSynced)}\tPC->Phone {boolToMessage(wasCoppiedToPhone)}");
@@ -84,12 +89,12 @@ namespace MTPSync
             if (string.IsNullOrEmpty(mtpSourceFolder))
                 return false;
 
-            var DBNames = gioClient.List(mtpSourceFolder).Where(fn => fn.EndsWith(".kdbx")).ToList();
+            var DBNames = mtpClient.List(mtpSourceFolder).Where(fn => fn.EndsWith(".kdbx")).ToList();
 
             bool success = true;
             foreach (var filename in DBNames)
             {
-                bool wasCoppied = gioClient.Download(mtpSourceFolder + filename, tempFolder + filename);
+                bool wasCoppied = mtpClient.Download(mtpSourceFolder + filename, tempFolder + filename);
 
                 if (wasCoppied)
                     sucessfullyCoppied.Add(filename);

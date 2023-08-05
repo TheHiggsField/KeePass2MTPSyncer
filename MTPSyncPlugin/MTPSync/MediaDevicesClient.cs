@@ -12,21 +12,27 @@ namespace MTPSync
 
         public MediaDeviceClient()
         {
-            InitializeMtpDevice();
+            InitializeMtpDevice("Xperia XZ1 Compact");
+        }
+        public MediaDeviceClient(string friendlyName)
+        {
+            InitializeMtpDevice(friendlyName);
         }
 
-        private void InitializeMtpDevice()
+        private void InitializeMtpDevice(string friendlyName)
         {
             // Find the first connected MTP device
             var devices = MediaDevice.GetDevices().ToList();
-            if (devices.Count > 0)
+
+            device = devices?.FirstOrDefault(d => d.FriendlyName == friendlyName);
+
+            if (device != null)
             {
-                device = devices[0];
                 device.Connect();
             }
             else
             {
-                throw new InvalidOperationException("No MTP device found.");
+                throw new InvalidOperationException("MTP device not found.");
             }
         }
 
@@ -34,7 +40,7 @@ namespace MTPSync
         {
             try
             {
-                using (FileStream stream = File.OpenWrite(destinationPath))
+                using (FileStream stream = File.Create(destinationPath))
                 {
                     device.DownloadFile(sourcePath, stream);
                 }
@@ -52,8 +58,12 @@ namespace MTPSync
         {
             try
             {
-                using (FileStream stream = File.OpenWrite(sourcePath))
+                using (FileStream stream = File.OpenRead(sourcePath))
                 {
+                    if(device.FileExists(mtpPath))
+                    {
+                        device.DeleteFile(mtpPath);
+                    }
                     device.UploadFile(sourcePath, mtpPath);
                 }
 
@@ -71,8 +81,8 @@ namespace MTPSync
             try
             {
                 // Get the list of files/folders in the specified MTP directory
-                var files = device.EnumerateFiles(mtpSourcePath);
-                return files.ToList();
+                return device.EnumerateFiles(mtpSourcePath).Select(path => Path.GetFileName(path)).ToList();
+
             }
             catch (Exception ex)
             {
