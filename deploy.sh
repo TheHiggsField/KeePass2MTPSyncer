@@ -1,8 +1,8 @@
-xbuild ./MTPSyncPlugin/MTPSync/MTPSync.csproj
+xbuild ./MTPSync/MTPSync.csproj
 
-rm --recursive ./MTPSyncPlugin/MTPSync/bin
-rm --recursive ./MTPSyncPlugin/MTPSync/obj
+rm --recursive ./MTPSync/bin
+rm --recursive ./MTPSync/obj
 
-keepass2 --plgx-create ./MTPSyncPlugin/MTPSync
+keepass2 --plgx-create ./MTPSync
 
-cp ./MTPSyncPlugin/MTPSync.plgx /usr/lib/keepass2/Plugins/MTPSync.plgx
+cp ./MTPSync.plgx /usr/lib/keepass2/Plugins/MTPSync.plgx

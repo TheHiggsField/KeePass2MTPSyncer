@@ -82,5 +82,7 @@ namespace Gio
                 return false;
             }
         }
+
+        public bool IsConnected => true; 
     }
 }

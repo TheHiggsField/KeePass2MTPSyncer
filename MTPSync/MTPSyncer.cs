@@ -10,31 +10,23 @@ using KeePass.Resources;
 using KeePassLib;
 using KeePassLib.Serialization;
 
-using Gio;
-
 namespace MTPSync
 {
 
     public class MTPSyncer
     {
-        /*
-        [System.Runtime.InteropServices.DllImport("kernel32.dll", SetLastError = true)]
-        static extern bool AllocConsole();
-        */
         private MTPAccess mtpClient = null;
 
         private MainForm mainWindow = null;
         
         string tempFolder = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + "/KeePass/TempDBs/";
 
-        string mtpSourceFolder = null;
+        public string mtpSourceFolder;
 
-        public MTPSyncer(string mtpfolderUri, MainForm _mainForm)
+        public MTPSyncer(string _mtpSourceFolder, MainForm _mainForm)
         {
 
-            //AllocConsole();
-            mtpClient = new MediaDeviceClient();
-            mtpSourceFolder = mtpfolderUri;
+            mtpSourceFolder = _mtpSourceFolder;
 
             mainWindow = _mainForm;
 
@@ -46,45 +38,57 @@ namespace MTPSync
             if (string.IsNullOrEmpty(mtpSourceFolder))
                 throw new InvalidOperationException("mtpSourceFolder cannot be null or empty.");
 
-            bool AllSynced = CopyDBsToTemp(out var sucessfullyCoppied);
+            if (mtpClient?.IsConnected != true)
+            {
+                mtpClient = new MediaDeviceClient(mtpSourceFolder);
+
+                if (!mtpClient.IsConnected)
+                {
+                    mainWindow.SetStatusEx("Mtp device is not connected!");
+                    return false;
+                }
+            }
+
+            bool AllSynced = CopyDBsToTemp(out var successfullyCopied);
             
             var openPwDBs = mainWindow.DocumentManager.GetOpenDatabases();
 
-            int sucessfullySynced = 0;
+            int successfullySynced = 0;
 
             foreach( var pwDB in openPwDBs)
             {
                 string filename = Path.GetFileName(pwDB.IOConnectionInfo.Path);
 
-                bool wasCoppiedFromPhone = sucessfullyCoppied.Contains(filename);
+                bool wasCopiedFromPhone = successfullyCopied.Contains(filename);
 
-                // Even if not copied the a version in temp might not have been synced yet if the Master password wasn't available, when it was coppied.
+                // Even if not copied the a version in temp might not have been synced yet
+                // if the Master password wasn't available, when it was copied.
                 bool wasSynced = SyncLocalDatabaseFiles(pwDB, tempFolder + filename);
 
-                bool wasCoppiedToPhone = false;
+                bool wasCopiedToPhone = false;
 
-                if (wasCoppiedFromPhone && wasSynced)
+                if (wasCopiedFromPhone && wasSynced)
                 {
-                    wasCoppiedToPhone = mtpClient.Upload(tempFolder + filename, mtpSourceFolder + filename);
+                    wasCopiedToPhone = mtpClient.Upload(tempFolder + filename, mtpSourceFolder + filename);
                 }
 
-                Console.WriteLine("Syncing: " + filename + $"\t\tPhone->PC {boolToMessage(wasCoppiedFromPhone && wasSynced)}\tPC->Phone {boolToMessage(wasCoppiedToPhone)}");
+                Console.WriteLine("Syncing: " + filename + $"\t\tPhone->PC {boolToMessage(wasCopiedFromPhone && wasSynced)}\tPC->Phone {boolToMessage(wasCopiedToPhone)}");
                 
-                sucessfullySynced += wasCoppiedFromPhone && wasSynced && wasCoppiedToPhone ? 1 : 0;
+                successfullySynced += wasCopiedFromPhone && wasSynced && wasCopiedToPhone ? 1 : 0;
 
-                AllSynced = AllSynced && wasCoppiedFromPhone && wasSynced && wasCoppiedToPhone;
+                AllSynced = AllSynced && wasCopiedFromPhone && wasSynced && wasCopiedToPhone;
             }
 			
         
 
-            UpdateUISyncPost(AllSynced, sucessfullySynced, openPwDBs.Count, sucessfullyCoppied.Count);
+            UpdateUISyncPost(AllSynced, successfullySynced, openPwDBs.Count, successfullyCopied.Count);
             
             return AllSynced;
 		}
 
-        public bool CopyDBsToTemp(out List<string> sucessfullyCoppied)
+        public bool CopyDBsToTemp(out List<string> successfullyCopied)
         {            
-            sucessfullyCoppied = new List<string>();
+            successfullyCopied = new List<string>();
 
             if (string.IsNullOrEmpty(mtpSourceFolder))
                 return false;
@@ -97,7 +101,7 @@ namespace MTPSync
                 bool wasCoppied = mtpClient.Download(mtpSourceFolder + filename, tempFolder + filename);
 
                 if (wasCoppied)
-                    sucessfullyCoppied.Add(filename);
+                    successfullyCopied.Add(filename);
 
                 success = wasCoppied && success;
             }
@@ -146,7 +150,6 @@ namespace MTPSync
             Console.WriteLine("\nFileMruList");
             Console.WriteLine(mainWindow.FileMruList);
 
-
             Console.WriteLine("\nGetOpenDatabases:");
 
             var openDBs = mainWindow.DocumentManager.GetOpenDatabases();
@@ -158,6 +161,11 @@ namespace MTPSync
             Console.WriteLine(connection);
             IOConnectionInfo connectionInfo = IOConnectionInfo.FromPath(tempFolder + "xxx.kdbx");
             Console.WriteLine(connectionInfo);
+        }
+
+        internal void SetMtpPath(string path)
+        {
+            mtpSourceFolder = path;
         }
     }
 }

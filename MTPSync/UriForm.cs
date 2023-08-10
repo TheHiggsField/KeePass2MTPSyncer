@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Windows.Forms;
 
 namespace MTPSync
@@ -6,22 +7,24 @@ namespace MTPSync
     public partial class UriForm : Form
     {
         private Label label1;
-        private TextBox textBox1;
+        private TextBox uriTextbox;
         private Button buttonOK;
 
         private Action<string> callBack;
 
-        public UriForm(Action<string> _callBack)
+
+        public UriForm(Action<string> _callBack, string _currentUri)
         {
             InitializeComponent();
 
             callBack = _callBack;
+            uriTextbox.Text = _currentUri;
         }
 
         private void InitializeComponent()
         {
             this.label1 = new System.Windows.Forms.Label();
-            this.textBox1 = new System.Windows.Forms.TextBox();
+            this.uriTextbox = new System.Windows.Forms.TextBox();
             this.buttonOK = new System.Windows.Forms.Button();
             this.SuspendLayout();
 
@@ -33,10 +36,10 @@ namespace MTPSync
             this.Controls.Add(this.label1);
 
             // TextBox
-            this.textBox1.Location = new System.Drawing.Point(30, 55);
-            this.textBox1.Name = "textBox1";
-            this.textBox1.Size = new System.Drawing.Size(440, 20);
-            this.Controls.Add(this.textBox1);
+            this.uriTextbox.Location = new System.Drawing.Point(30, 55);
+            this.uriTextbox.Name = "textBox1";
+            this.uriTextbox.Size = new System.Drawing.Size(440, 20);
+            this.Controls.Add(this.uriTextbox);
 
             // OK Button
             this.buttonOK.Location = new System.Drawing.Point(150, 80);
@@ -56,7 +59,11 @@ namespace MTPSync
         private void buttonOK_Click(object sender, EventArgs e)
         {
             // Button click event handler
-            string uri = textBox1.Text;
+            string uri = uriTextbox.Text;
+
+            if (!uri.EndsWith(Path.DirectorySeparatorChar.ToString()))
+                uri += Path.DirectorySeparatorChar;
+
             callBack(uri);
             this.Close();
         }
