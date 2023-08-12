@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-
+using Gio;
 using KeePass.DataExchange;
 using KeePass.Forms;
 using KeePass.Resources;
@@ -40,7 +40,7 @@ namespace MTPSync
 
             if (mtpClient?.IsConnected != true)
             {
-                mtpClient = new MediaDeviceClient(mtpSourceFolder);
+                mtpClient = new GioClient(mtpSourceFolder);
 
                 if (!mtpClient.IsConnected)
                 {

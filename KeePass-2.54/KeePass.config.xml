@@ -8,9 +8,9 @@
 		<DpiFactorY>1</DpiFactorY>
 	</Meta>
 	<Application>
-		<LastUpdateCheck>2023-07-27T20:00:11Z</LastUpdateCheck>
+		<LastUpdateCheck>2023-08-12T02:11:50Z</LastUpdateCheck>
 		<LastUsedFile>
-			<Path>..\..\..\Documents\GeneralKeepassCommon.kdbx</Path>
+			<Path>../../../Documents/GeneralKeepassCommon.kdbx</Path>
 			<CredProtMode>Obf</CredProtMode>
 			<CredSaveMode>NoSave</CredSaveMode>
 		</LastUsedFile>
@@ -18,19 +18,19 @@
 			<MaxItemCount>12</MaxItemCount>
 			<Items>
 				<ConnectionInfo>
-					<Path>..\..\..\Documents\GeneralKeepassCommon.kdbx</Path>
+					<Path>../../../Documents/GeneralKeepassCommon.kdbx</Path>
 					<CredProtMode>Obf</CredProtMode>
 					<CredSaveMode>NoSave</CredSaveMode>
 				</ConnectionInfo>
 				<ConnectionInfo>
-					<Path>..\..\Users\rune\Documents\GeneralKeepassCommon.kdbx</Path>
+					<Path>../../Users/rune/Documents/GeneralKeepassCommon.kdbx</Path>
 					<CredProtMode>Obf</CredProtMode>
 					<CredSaveMode>NoSave</CredSaveMode>
 				</ConnectionInfo>
 			</Items>
 		</MostRecentlyUsed>
 		<WorkingDirectories>
-			<Item>Database@..\..\..\Documents</Item>
+			<Item>Database@../../../Documents</Item>
 		</WorkingDirectories>
 		<Start>
 			<CheckForUpdate>true</CheckForUpdate>
@@ -140,16 +140,19 @@
 		<OptionsTabIndex>0</OptionsTabIndex>
 		<KeySources>
 			<Association>
-				<DatabasePath>..\..\Users\rune\Documents\GeneralKeepassCommon.kdbx</DatabasePath>
+				<DatabasePath>../../Users/rune/Documents/GeneralKeepassCommon.kdbx</DatabasePath>
 				<Password>true</Password>
 			</Association>
 			<Association>
-				<DatabasePath>..\..\..\Documents\GeneralKeepassCommon.kdbx</DatabasePath>
+				<DatabasePath>../../../Documents/GeneralKeepassCommon.kdbx</DatabasePath>
 				<Password>true</Password>
 			</Association>
 		</KeySources>
 	</Defaults>
 	<Integration>
+		<HotKeyGlobalAutoType>0</HotKeyGlobalAutoType>
+		<HotKeyGlobalAutoTypePassword>0</HotKeyGlobalAutoTypePassword>
+		<HotKeyShowWindow>0</HotKeyShowWindow>
 		<UrlSchemeOverrides>
 			<BuiltInOverridesEnabled>0</BuiltInOverridesEnabled>
 			<CustomOverrides />

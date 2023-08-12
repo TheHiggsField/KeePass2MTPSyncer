@@ -34,6 +34,9 @@
     <Reference Include="KeePass">
       <HintPath>..\KeePass-2.54\KeePass.exe</HintPath>
     </Reference>
+    <Reference Include="MediaDevices">
+      <HintPath>..\MediaDevices.1.10.0\lib\net48\MediaDevices.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />

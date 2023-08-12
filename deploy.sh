@@ -1,8 +1,9 @@
 xbuild ./MTPSync/MTPSync.csproj
 
-rm --recursive ./MTPSync/bin
-rm --recursive ./MTPSync/obj
+#rm --recursive ./MTPSync/bin
+#rm --recursive ./MTPSync/obj
 
-keepass2 --plgx-create ./MTPSync
+#keepass2 --plgx-create ./MTPSync
 
-cp ./MTPSync.plgx /usr/lib/keepass2/Plugins/MTPSync.plgx
+cp ./MTPSync/bin/Debug/MediaDevices.dll /usr/lib/keepass2/Plugins/MediaDevices.dll
+cp ./MTPSync/bin/Debug/MTPSync.dll /usr/lib/keepass2/Plugins/MTPSync.dll

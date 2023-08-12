@@ -9,24 +9,37 @@ namespace Gio
         public List<string> Output {get; set;} = new List<string>();
         public List<string> Error {get; set;} = new List<string>();
 
-        public bool Copy(string mtpSourcePath, string destinationPath)
+        private string aRandomMtpPath = "SomethingWhichWilCauseAnError";
+
+        public GioClient(string path)
         {
-            return Run($"copy \"{mtpSourcePath}\" \"{destinationPath}\"");
+            aRandomMtpPath = path;
         }
 
-        public bool Download(string mtpSourcePath, string destinationPath)
+        public bool Copy(string SourcePath, string destinationPath)
         {
-            return Run($"copy \"{mtpSourcePath}\" \"{destinationPath}\"");
+            return Run($"copy \"{SourcePath}\" \"{destinationPath}\"");
         }
 
-        public bool Upload(string mtpSourcePath, string destinationPath)
+        public bool Download(string mtpPath, string destinationPath)
         {
-            return Run($"copy \"{mtpSourcePath}\" \"{destinationPath}\"");
+            return Copy(mtpPath, destinationPath);
         }
 
-        public List<string> List(string mtpSourcePath)
+        public bool Upload(string SourcePath, string mtpPath)
         {
-            return Run($"list \"{mtpSourcePath}\"") ? Output : Error;
+            return Copy(SourcePath, mtpPath);
+        }
+
+        public List<string> List(string mtpPath)
+        {
+            return Run($"list \"{mtpPath}\"") ? Output : Error;
+
+        }
+
+        public bool Info(string mtpPath)
+        {
+            return Run($"info \"{mtpPath}\"");
 
         }
 
@@ -83,6 +96,6 @@ namespace Gio
             }
         }
 
-        public bool IsConnected => true; 
+        public bool IsConnected => Info(aRandomMtpPath); 
     }
 }
