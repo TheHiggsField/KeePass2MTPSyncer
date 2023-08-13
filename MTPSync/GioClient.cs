@@ -2,12 +2,21 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 
-namespace Gio
+namespace MTPSync
 {
-    public class GioClient: MTPSync.MTPAccess
+    public class GioClient: IMTPClient
     {
         public List<string> Output {get; set;} = new List<string>();
         public List<string> Error {get; set;} = new List<string>();
+
+        private string mtpUriFromInitialize = string.Empty;
+
+        public GioClient(string mtpUri)
+        {
+            Debug.Assert(Run("--version"), "The plugin only works for Linux systems, with the GIO CLI.");
+            mtpUriFromInitialize += mtpUri;
+        }
+
 
         public bool Copy(string mtpSourcePath, string destinationPath)
         {
@@ -27,7 +36,12 @@ namespace Gio
         public List<string> List(string mtpSourcePath)
         {
             return Run($"list \"{mtpSourcePath}\"") ? Output : Error;
+        }
 
+        public bool IsFolder(string mtpSourcePath)
+        {
+            List(mtpSourcePath);
+            return Error.Count == 0;
         }
 
         public bool Run(string arguments)
@@ -83,6 +97,6 @@ namespace Gio
             }
         }
 
-        public bool IsConnected => true; 
+        public bool IsConnected => Run(@"info " + mtpUriFromInitialize); 
     }
 }

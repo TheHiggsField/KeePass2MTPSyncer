@@ -1,71 +1,93 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Windows.Forms;
+using KeePass.UI;
 
 namespace MTPSync
 {
     public partial class UriForm : Form
     {
-        private Label label1;
-        private TextBox uriTextbox;
-        private Button buttonOK;
+        private Label lblPrompt;
+        private TextBox tbxUri;
+        private Button btnSave;
 
-        private Action<string> callBack;
+        public string UriResult { get; private set; } = null;
 
-
-        public UriForm(Action<string> _callBack, string _currentUri)
+        public UriForm(string _currentUri)
         {
             InitializeComponent();
 
-            callBack = _callBack;
-            uriTextbox.Text = _currentUri;
+            tbxUri.Text = _currentUri;
         }
 
         private void InitializeComponent()
         {
-            this.label1 = new System.Windows.Forms.Label();
-            this.uriTextbox = new System.Windows.Forms.TextBox();
-            this.buttonOK = new System.Windows.Forms.Button();
-            this.SuspendLayout();
 
             // Label
-            this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(30, 30);
-            this.label1.Name = "label1";
-            this.label1.Text = "Enter the URI for the folder containing the databases on you phone:";
-            this.Controls.Add(this.label1);
+            lblPrompt = new Label()
+            {
+                Anchor = AnchorStyles.Right | AnchorStyles.Left,
+                Name = "lblPrompt",
+                Text = "Enter the URI for the folder containing the databases on you phone:"
+            };
 
             // TextBox
-            this.uriTextbox.Location = new System.Drawing.Point(30, 55);
-            this.uriTextbox.Name = "textBox1";
-            this.uriTextbox.Size = new System.Drawing.Size(440, 20);
-            this.Controls.Add(this.uriTextbox);
+            tbxUri = new TextBox()
+            {
+                Anchor = AnchorStyles.Right| AnchorStyles.Left,
+                Name = "tbxUri"
+            };
 
-            // OK Button
-            this.buttonOK.Location = new System.Drawing.Point(150, 80);
-            this.buttonOK.Name = "buttonOK";
-            this.buttonOK.Text = "Save";
-            this.buttonOK.Click += new System.EventHandler(this.buttonOK_Click);
-            this.Controls.Add(this.buttonOK);
+            // SaveButton
+            btnSave = new Button()
+            {
+                Anchor = AnchorStyles.Right,
+                Name = "btnSave",
+                Text = "Save"
+            };
+            btnSave.Click += new EventHandler(buttonOK_Click);
 
-            // MyForm
-            this.ClientSize = new System.Drawing.Size(500, 150);
-            this.Name = "MyForm";
-            this.Text = "Enter MTP URI";
-            this.ResumeLayout(false);
-            this.PerformLayout();
+
+            var layout = new TableLayoutPanel()
+            {
+                Dock = DockStyle.Fill,
+                RowCount = 4 // Create a Phantom row to take up extra vertical space
+            };
+
+            layout.Controls.Add(lblPrompt, 0, 0);
+            layout.Controls.Add(tbxUri, 0, 1);
+            layout.Controls.Add(btnSave, 0, 2);
+            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 20));
+            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 30));
+            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 30));
+
+            Controls.Add(layout);
+
+            // UriForm
+            Padding = new Padding() { Left = 50, Right = 50 };
+            MinimumSize = new System.Drawing.Size(600, 130);
+            Name = "UriForm";
+            Text = "Enter MTP URI";
         }
 
         private void buttonOK_Click(object sender, EventArgs e)
         {
             // Button click event handler
-            string uri = uriTextbox.Text;
+            string uri = tbxUri.Text;
+
+            if (MTPSyncer.GetMTPClient(uri)?.IsFolder(uri) != true)
+            {
+                MessageBox.Show("The path/URI was not found, or is not a Directory.", "Path/URI not found");
+                return;
+            }
 
             if (!uri.EndsWith(Path.DirectorySeparatorChar.ToString()))
                 uri += Path.DirectorySeparatorChar;
 
-            callBack(uri);
-            this.Close();
+            UriResult = uri;
+
+            Close();
         }
     }
 }

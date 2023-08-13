@@ -1,10 +1,12 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
+using System.Security.Policy;
 using System.Windows.Forms;
 
 using KeePass;
+using KeePass.Forms;
 using KeePass.Plugins;
-using static System.Windows.Forms.LinkLabel;
 
 namespace MTPSync
 {
@@ -33,10 +35,17 @@ namespace MTPSync
 			if(host == null) return false;
 			m_host = host;
 
-            syncer = new MTPSyncer(mtpSourceFolder, host.MainWindow);
+            syncer = new MTPSyncer(host.MainWindow);
+
+            m_host.MainWindow.FileOpened += syncer.OpenFileHandler;
 
             return true;
 		}
+
+        public override void Terminate()
+        {
+            m_host.MainWindow.FileOpened -= syncer.OpenFileHandler;
+        }
 
         public override ToolStripMenuItem GetMenuItem(PluginMenuType t)
         {
@@ -44,23 +53,18 @@ namespace MTPSync
             if(t == PluginMenuType.Main)
             {
                 ToolStripMenuItem mainItem = new ToolStripMenuItem("Sync Databases from Phone");
-                mainItem.Click += this.OnSyncDBsClicked;
+                mainItem.Click += OnSyncDBsClicked;
 
                 var uriItem = new ToolStripMenuItem("Update MTP device URI");
-                uriItem.Click += this.ShowUriForm;
+                uriItem.Click += ShowUriForm;
+                mainItem.DropDownItems.Add(uriItem);
 
-                var consoleItem = new ToolStripMenuItem("Where's my terminal Windows!");
-                consoleItem.Click += this.WindowsIsDumbSoGetMeATerminal;
-
-
-                mainItem.DropDownItems.AddRange
-                (
-                    new ToolStripDropDownItem[]
-                    {
-                        uriItem,
-                        consoleItem
-                    }
-                );
+                if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+                {
+                    var consoleItem = new ToolStripMenuItem("Where's my terminal Windows!");
+                    consoleItem.Click += WindowsIsDumbSoGetMeATerminal;
+                    mainItem.DropDownItems.Add(consoleItem);
+                }
 
                 return mainItem;
             }
@@ -70,45 +74,40 @@ namespace MTPSync
 
         private void OnSyncDBsClicked(object sender, EventArgs e)
         {
-            try 
+            if (string.IsNullOrEmpty(mtpSourceFolder))
             {
-                syncer.SyncDatabases();
+                ShowUriForm(sender, e, OnSyncDBsClicked);
+                return;
             }
-            catch (InvalidOperationException)
-            {
-                ShowUriForm(sender, e);
 
-                try 
-                {
-                    syncer.SyncDatabases();
-                }
-                catch (InvalidOperationException)
-                {
-                    // Dialog was closed - abandon sync. 
-                }
-            }
+            syncer.SyncDatabases(mtpSourceFolder);
         }
 
         private void ShowUriForm(object sender, EventArgs e)
         {
-            UriForm uriForm = new UriForm(UdateMtpSyncerPath, mtpSourceFolder);
+            ShowUriForm(sender, e, null);
+        }
+
+        private void ShowUriForm(object sender, EventArgs e, Action<object, EventArgs> callBack)
+        {
+            UriForm uriForm = new UriForm(mtpSourceFolder);
 
             uriForm.ShowDialog();
 
-        }
+            bool success = !string.IsNullOrEmpty(uriForm.UriResult);
 
-        private void UdateMtpSyncerPath(string path)
-        {
-            mtpSourceFolder = path;
-            syncer.SetMtpPath(path);
+            if (success)
+                mtpSourceFolder = uriForm.UriResult;
+
+            uriForm.Dispose();
+
+            if (callBack != null && success)
+                callBack(sender, e);
         }
 
         private void WindowsIsDumbSoGetMeATerminal(object sender, EventArgs e)
         {
             AllocConsole();
         }
-
-
 	}
-    
 }

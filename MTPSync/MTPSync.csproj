@@ -50,8 +50,9 @@
     <Compile Include="MTPSyncExt.cs" />
     <Compile Include="GioClient.cs" />
     <Compile Include="MediaDevicesClient.cs" />
-    <Compile Include="IMtpAccess.cs" />
+    <Compile Include="IMTPClient.cs" />
     <Compile Include="MTPSyncer.cs" />
+    <Compile Include="PwDatabaseExtension.cs" />
     <Compile Include="UriForm.cs">
       <SubType>Form</SubType>
     </Compile>

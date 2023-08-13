@@ -1,5 +1,7 @@
 using System;
+using System.CodeDom;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 
@@ -15,157 +17,171 @@ namespace MTPSync
 
     public class MTPSyncer
     {
-        private MTPAccess mtpClient = null;
+        private IMTPClient mtpClient = null;
 
-        private MainForm mainWindow = null;
+        private readonly MainForm mainWindow = null;
         
-        string tempFolder = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + "/KeePass/TempDBs/";
+        private readonly string tempFolder = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + "/KeePass/TempDBs/";
 
-        public string mtpSourceFolder;
-
-        public MTPSyncer(string _mtpSourceFolder, MainForm _mainForm)
+        public MTPSyncer(MainForm _mainForm)
         {
-
-            mtpSourceFolder = _mtpSourceFolder;
 
             mainWindow = _mainForm;
 
             Directory.CreateDirectory(tempFolder);
         }
 
-        public bool SyncDatabases()
-		{
-            if (string.IsNullOrEmpty(mtpSourceFolder))
-                throw new InvalidOperationException("mtpSourceFolder cannot be null or empty.");
-
+        public bool SyncDatabases(string mtpSourceFolder)
+        {
             if (mtpClient?.IsConnected != true)
             {
-                mtpClient = new MediaDeviceClient(mtpSourceFolder);
+                mtpClient = GetMTPClient(mtpSourceFolder);
 
                 if (!mtpClient.IsConnected)
                 {
-                    mainWindow.SetStatusEx("Mtp device is not connected!");
+                    mainWindow.SetStatusEx("Mtp device is not found!");
                     return false;
                 }
             }
 
-            bool AllSynced = CopyDBsToTemp(out var successfullyCopied);
+            CopyDBsToTemp(mtpSourceFolder, out var copiedFileNames);
+
+            GetDBsFromTemp(out var dBsFromTemp);
             
             var openPwDBs = mainWindow.DocumentManager.GetOpenDatabases();
 
-            int successfullySynced = 0;
+            int syncedCount = 0;
+            bool AllSynced = true;
 
             foreach( var pwDB in openPwDBs)
             {
-                string filename = Path.GetFileName(pwDB.IOConnectionInfo.Path);
 
-                bool wasCopiedFromPhone = successfullyCopied.Contains(filename);
+                bool dbFound = dBsFromTemp.TryGetValue(pwDB.GetDatabasePublicGuid(), out var tempFileName);
 
-                // Even if not copied the a version in temp might not have been synced yet
+                if (!dbFound)
+                    continue;
+                
+                // Even if not copied the version in temp might not have been synced yet
                 // if the Master password wasn't available, when it was copied.
-                bool wasSynced = SyncLocalDatabaseFiles(pwDB, tempFolder + filename);
+                bool wasSynced = SyncLocalDatabaseFiles(pwDB, tempFolder + tempFileName) && copiedFileNames.Contains(tempFileName);
 
                 bool wasCopiedToPhone = false;
 
-                if (wasCopiedFromPhone && wasSynced)
+                if (wasSynced )
                 {
-                    wasCopiedToPhone = mtpClient.Upload(tempFolder + filename, mtpSourceFolder + filename);
+                    wasCopiedToPhone = mtpClient.Upload(tempFolder + tempFileName, mtpSourceFolder + tempFileName);
                 }
 
-                Console.WriteLine("Syncing: " + filename + $"\t\tPhone->PC {boolToMessage(wasCopiedFromPhone && wasSynced)}\tPC->Phone {boolToMessage(wasCopiedToPhone)}");
+                Console.WriteLine("Syncing: " + tempFileName + $"\t\tPhone->PC {boolToMessage(wasSynced)}\tPC->Phone {boolToMessage(wasCopiedToPhone)}");
                 
-                successfullySynced += wasCopiedFromPhone && wasSynced && wasCopiedToPhone ? 1 : 0;
+                syncedCount += wasCopiedToPhone ? 1 : 0;
 
-                AllSynced = AllSynced && wasCopiedFromPhone && wasSynced && wasCopiedToPhone;
+                AllSynced = AllSynced && wasCopiedToPhone;
             }
-			
-        
+            
 
-            UpdateUISyncPost(AllSynced, successfullySynced, openPwDBs.Count, successfullyCopied.Count);
+            UpdateUISyncPost(AllSynced, syncedCount, openPwDBs.Count, copiedFileNames.Count);
             
             return AllSynced;
-		}
+        }
 
-        public bool CopyDBsToTemp(out List<string> successfullyCopied)
-        {            
-            successfullyCopied = new List<string>();
+        public bool CopyDBsToTemp(string mtpSourceFolder, out List<string> downloadedDBFiles)
+        {
+            downloadedDBFiles = new List<string>();
 
             if (string.IsNullOrEmpty(mtpSourceFolder))
                 return false;
 
-            var DBNames = mtpClient.List(mtpSourceFolder).Where(fn => fn.EndsWith(".kdbx")).ToList();
+            var DBNames = mtpClient.List(mtpSourceFolder).Where(fn => Path.GetExtension(fn) == ".kdbx").ToList();
 
             bool success = true;
             foreach (var filename in DBNames)
             {
-                bool wasCoppied = mtpClient.Download(mtpSourceFolder + filename, tempFolder + filename);
+                var wasDownloaded = mtpClient.Download(mtpSourceFolder + filename, tempFolder + filename);
+                
+                success = wasDownloaded && success;
 
-                if (wasCoppied)
-                    successfullyCopied.Add(filename);
-
-                success = wasCoppied && success;
+                if(success)
+                {
+                    downloadedDBFiles.Add(filename);
+                }
             }
             
             return success;
         }
 
+        private bool GetDBsFromTemp(out Dictionary<Guid, string> dBsInTemp)
+        {
+            bool success = true;
+            dBsInTemp = new Dictionary<Guid, string>();
+
+            foreach (var filePath in Directory.GetFiles(tempFolder))
+            {
+                var pwDb = PwDatabase.LoadHeader(IOConnectionInfo.FromPath(filePath));
+
+                Guid guid = pwDb?.ReadDatabasePublicGuid() ?? default;
+
+                if (pwDb.ReadDatabasePublicGuid() != default)
+                    dBsInTemp.Add(pwDb.ReadDatabasePublicGuid(), Path.GetFileName(filePath));
+                else
+                    success = false;
+            }
+
+            return success;
+        }
 
         private bool SyncLocalDatabaseFiles(PwDatabase pwDB, string filePath)
-		{         
-            
-			IOConnectionInfo ioc = IOConnectionInfo.FromPath
-            (
-                filePath
-            );
+        {
+            IOConnectionInfo ioc = IOConnectionInfo.FromPath(filePath);
 
-			if(ioc == null || !ioc.CanProbablyAccess()) return false;
+            bool? ob = null;
 
-			MainForm mf = mainWindow;
-			if((pwDB == null) || !pwDB.IsOpen) return false;
+            if (ioc?.CanProbablyAccess() == true && pwDB?.IsOpen == true)
+            {
+                ob =  ImportUtil.Synchronize(pwDB, mainWindow, ioc, false, mainWindow);
 
-			bool? ob = ImportUtil.Synchronize(pwDB, mf, ioc, false, mf);
-
-            // Remove the temp file from most recently used.
-            if(ob == true)
-                mainWindow.FileMruList.RemoveItem(ioc.GetDisplayName());
+                // Remove the temp file from most recently used.
+                if (ob == true)
+                    mainWindow.FileMruList.RemoveItem(ioc.GetDisplayName());
+            }
 
             return ob ?? false;
-		}
+        }
 
         internal void UpdateUISyncPost(bool? obResult, int countSyncedDBs, int numOpenDBs, int numCoppiedDBs)
-		{
-			if(!obResult.HasValue) return;
+        {
+            if(!obResult.HasValue) return;
 
-			mainWindow.UpdateUI(false, null, true, null, true, null, false);
-			mainWindow.SetStatusEx((obResult.Value ? KPRes.SyncSuccess : KPRes.SyncFailed) + $" ({countSyncedDBs}/{numOpenDBs} synced, {numCoppiedDBs} transfered.)");
-		}
+            mainWindow.UpdateUI(false, null, true, null, true, null, false);
+            mainWindow.SetStatusEx((obResult.Value ? KPRes.SyncSuccess : KPRes.SyncFailed) + $" ({countSyncedDBs}/{numOpenDBs} synced, {numCoppiedDBs} transfered.)");
+        }
 
         private string boolToMessage(bool? success)
         {
             return success ?? false ? "succeeded" : "failed   ";
         }
 
-        private void TestingStuff()
+        internal void OpenFileHandler(object sender, FileOpenedEventArgs e)
         {
-            Console.WriteLine("\nFileMruList");
-            Console.WriteLine(mainWindow.FileMruList);
-
-            Console.WriteLine("\nGetOpenDatabases:");
-
-            var openDBs = mainWindow.DocumentManager.GetOpenDatabases();
-            Console.WriteLine(string.Join(", ", openDBs.Select(db => db.Name)));
-            
-            Console.WriteLine("\nDB ioc:");
-
-            var connection = openDBs[0].IOConnectionInfo.Path;
-            Console.WriteLine(connection);
-            IOConnectionInfo connectionInfo = IOConnectionInfo.FromPath(tempFolder + "xxx.kdbx");
-            Console.WriteLine(connectionInfo);
+            Console.WriteLine($"DatabasePublicGuid ({e.Database.Name}):\n{e.Database.ReadDatabasePublicGuid()}");
+            e.Database.SetDatabasePublicGuid();
         }
 
-        internal void SetMtpPath(string path)
+        public static IMTPClient GetMTPClient(string path)
         {
-            mtpSourceFolder = path;
+            switch (Environment.OSVersion.Platform)
+            {
+                case PlatformID.Unix:
+                    return new GioClient(path);
+                case PlatformID.Win32NT:
+                    return new MediaDeviceClient(path);
+                default:
+                {
+                    Debug.Assert(false, "No MTP client found for you OS");
+                    return null;
+                }
+            }
         }
+
     }
 }

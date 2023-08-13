@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using MediaDevices;
 using System.IO;
-using System.Security.Policy;
+using System.Diagnostics;
 
 namespace MTPSync
 {
-    public class MediaDeviceClient : MTPAccess
+    public class MediaDeviceClient : IMTPClient
     {
         private MediaDevice device;
 
@@ -16,7 +16,15 @@ namespace MTPSync
         public MediaDeviceClient(string mtpPath)
         {
             RelativePath(mtpPath, out var deviceName);
-            InitializeMtpDevice(deviceName);
+
+            try
+            {
+                InitializeMtpDevice(deviceName);
+            }
+            catch
+            {
+                Debug.Assert(false);
+            }
         }
 
         private void InitializeMtpDevice(string friendlyName)
@@ -79,12 +87,15 @@ namespace MTPSync
                     if (device.FileExists(mtpPath))
                     {
                         tempFilePath = mtpPath + Guid.NewGuid().ToString();
-                        device.Rename(mtpPath, tempFilePath);
+                        device.Rename(mtpPath, Path.GetFileName(tempFilePath));
                     }
 
                     device.UploadFile(sourcePath, mtpPath);
 
-                    device.DeleteFile(tempFilePath);
+                    if (device.FileExists(mtpPath))
+                    {
+                        device.DeleteFile(tempFilePath);
+                    }
 
                 }
 
@@ -122,6 +133,23 @@ namespace MTPSync
             }
         }
 
+        public bool IsFolder(string mtpPath)
+        {
+            mtpPath = RelativePath(mtpPath, out var deviceName);
+            InitializeMtpDevice(deviceName);
+
+            try
+            {
+                device.GetDirectoryInfo(mtpPath);
+
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
         public bool IsConnected => initialized && device.IsConnected;
 
         public string RelativePath(string path)
@@ -140,19 +168,19 @@ namespace MTPSync
 
                 deviceName = segments[1];
 
-
                 mtpRelativePath = path.Substring( (@"mtp://" + segments[1]).Length);
 
             }
             else if (path.StartsWith("This PC" + Path.DirectorySeparatorChar))
             {
-
                 var segments = path.Split(Path.DirectorySeparatorChar);
 
                 deviceName = segments[1];
 
-                mtpRelativePath = path.Substring(("This Pc" + Path.DirectorySeparatorChar + segments[1] + Path.DirectorySeparatorChar).Length);
-
+                if (!string.IsNullOrEmpty(segments[1]))
+                    mtpRelativePath = path.Substring(("This Pc" + Path.DirectorySeparatorChar + segments[1] + Path.DirectorySeparatorChar).Length);
+                else
+                    return null;
             }
             else
             {

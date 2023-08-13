@@ -10,9 +10,9 @@ namespace ConsoleApp1
         static void Main(string[] args)
         {
 
-            var client = new MTPSync.MediaDeviceClient();
 
-            string path = @"Internal shared storage\Download\";
+            string path = @"This PC\Internal shared storage\Download\";
+            var client = new MTPSync.MediaDeviceClient(path);
 
 
             Console.WriteLine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
