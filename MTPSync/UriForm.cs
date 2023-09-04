@@ -1,8 +1,6 @@
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Windows.Forms;
-using KeePass.UI;
 
 namespace MTPSync
 {
@@ -11,14 +9,18 @@ namespace MTPSync
         private Label lblPrompt;
         private TextBox tbxUri;
         private Button btnSave;
+        private TableLayoutPanel layout;
+
+        private readonly IMTPClient mTPClient;
 
         public string UriResult { get; private set; } = null;
 
-        public UriForm(string _currentUri)
+        public UriForm(string _currentUri, IMTPClient _mTPClient)
         {
             InitializeComponent();
 
             tbxUri.Text = _currentUri;
+            mTPClient = _mTPClient;
         }
 
         private void InitializeComponent()
@@ -49,7 +51,7 @@ namespace MTPSync
             btnSave.Click += new EventHandler(buttonOK_Click);
 
 
-            var layout = new TableLayoutPanel()
+            layout = new TableLayoutPanel()
             {
                 Dock = DockStyle.Fill,
                 RowCount = 4 // Create a Phantom row to take up extra vertical space
@@ -76,7 +78,7 @@ namespace MTPSync
             // Button click event handler
             string uri = tbxUri.Text;
 
-            if (MTPSyncer.GetMTPClient(uri)?.IsFolder(uri) != true)
+            if (mTPClient.IsFolder(uri) != true)
             {
                 MessageBox.Show("The path/URI was not found, or is not a Directory.", "Path/URI not found");
                 return;

@@ -11,7 +11,7 @@ namespace MTPSync
     {
         private MediaDevice device;
 
-        private bool initialized = false;
+        private bool Initialized => device != null;
 
         public MediaDeviceClient(string mtpPath)
         {
@@ -31,19 +31,40 @@ namespace MTPSync
         {
             if (!string.IsNullOrEmpty(friendlyName) && !IsConnected)
             {
-                // Find the first connected MTP device
+
+                if (Initialized)
+                {
+                    SetUp();
+
+                    if (IsConnected)
+                        return;
+                    else
+                        ResetConnection(null, null);
+
+                }
+
                 var devices = MediaDevice.GetDevices().ToList();
 
                 device = devices?.FirstOrDefault(d => d.FriendlyName == friendlyName);
 
                 if (device != null)
                 {
-                    device.Connect();
-                    device.DeviceCapabilitiesUpdated += (s, e) => { initialized = false; };
-                    device.DeviceRemoved += (s, e) => { initialized = false; };
-                    initialized = true;
+                    SetUp();
                 }
             }
+        }
+
+        private void ResetConnection(object sender, MediaDeviceEventArgs e)
+        {
+            device = null;
+            Console.WriteLine($"Reset device connection.");
+        }
+
+        private void SetUp()
+        {
+            device.Connect();
+            device.DeviceCapabilitiesUpdated += ResetConnection;
+            device.DeviceRemoved += ResetConnection;
         }
 
         public bool Download(string mtpPath, string destinationPath)
@@ -150,7 +171,7 @@ namespace MTPSync
             }
         }
 
-        public bool IsConnected => initialized && device.IsConnected;
+        public bool IsConnected => Initialized && device.IsConnected;
 
         public string RelativePath(string path)
         {

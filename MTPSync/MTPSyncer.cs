@@ -17,75 +17,77 @@ namespace MTPSync
 
     public class MTPSyncer
     {
-        private IMTPClient mtpClient = null;
-
         private readonly MainForm mainWindow = null;
         
         private readonly string tempFolder = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + "/KeePass/TempDBs/";
 
-        public MTPSyncer(MainForm _mainForm)
-        {
+        public IMTPClient mtpClient {  get; private set; }
 
+        public MTPSyncer(MainForm _mainForm, string mtpFolder)
+        {
             mainWindow = _mainForm;
+
+            mtpClient = GetMTPClient(mtpFolder);
 
             Directory.CreateDirectory(tempFolder);
         }
 
         public bool SyncDatabases(string mtpSourceFolder)
         {
+
             if (mtpClient?.IsConnected != true)
             {
-                mtpClient = GetMTPClient(mtpSourceFolder);
+                mtpClient?.IsFolder(mtpSourceFolder);
 
-                if (!mtpClient.IsConnected)
+                if (mtpClient?.IsConnected != true)
                 {
                     mainWindow.SetStatusEx("Mtp device is not found!");
                     return false;
                 }
             }
 
-            CopyDBsToTemp(mtpSourceFolder, out var copiedFileNames);
+            CopyDBsToTemp(mtpClient, mtpSourceFolder, out var copiedFileNames);
 
             GetDBsFromTemp(out var dBsFromTemp);
-            
+
             var openPwDBs = mainWindow.DocumentManager.GetOpenDatabases();
 
             int syncedCount = 0;
             bool AllSynced = true;
 
-            foreach( var pwDB in openPwDBs)
+            foreach (var pwDB in openPwDBs)
             {
 
                 bool dbFound = dBsFromTemp.TryGetValue(pwDB.GetDatabasePublicGuid(), out var tempFileName);
 
                 if (!dbFound)
                     continue;
-                
+
                 // Even if not copied the version in temp might not have been synced yet
                 // if the Master password wasn't available, when it was copied.
                 bool wasSynced = SyncLocalDatabaseFiles(pwDB, tempFolder + tempFileName) && copiedFileNames.Contains(tempFileName);
 
                 bool wasCopiedToPhone = false;
 
-                if (wasSynced )
+                if (wasSynced)
                 {
                     wasCopiedToPhone = mtpClient.Upload(tempFolder + tempFileName, mtpSourceFolder + tempFileName);
                 }
 
                 Console.WriteLine("Syncing: " + tempFileName + $"\t\tPhone->PC {boolToMessage(wasSynced)}\tPC->Phone {boolToMessage(wasCopiedToPhone)}");
-                
+
                 syncedCount += wasCopiedToPhone ? 1 : 0;
 
                 AllSynced = AllSynced && wasCopiedToPhone;
             }
-            
+
 
             UpdateUISyncPost(AllSynced, syncedCount, openPwDBs.Count, copiedFileNames.Count);
-            
+
             return AllSynced;
         }
 
-        public bool CopyDBsToTemp(string mtpSourceFolder, out List<string> downloadedDBFiles)
+        public bool CopyDBsToTemp(IMTPClient mtpClient, string mtpSourceFolder, out List<string> downloadedDBFiles)
         {
             downloadedDBFiles = new List<string>();
 
@@ -121,8 +123,8 @@ namespace MTPSync
 
                 Guid guid = pwDb?.ReadDatabasePublicGuid() ?? default;
 
-                if (pwDb.ReadDatabasePublicGuid() != default)
-                    dBsInTemp.Add(pwDb.ReadDatabasePublicGuid(), Path.GetFileName(filePath));
+                if (guid != default)
+                    dBsInTemp.Add(guid, Path.GetFileName(filePath));
                 else
                     success = false;
             }

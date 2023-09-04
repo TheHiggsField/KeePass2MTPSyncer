@@ -1,11 +1,7 @@
 ﻿using System;
-using System.Diagnostics;
-using System.IO;
-using System.Security.Policy;
 using System.Windows.Forms;
 
 using KeePass;
-using KeePass.Forms;
 using KeePass.Plugins;
 
 namespace MTPSync
@@ -35,7 +31,7 @@ namespace MTPSync
 			if(host == null) return false;
 			m_host = host;
 
-            syncer = new MTPSyncer(host.MainWindow);
+            syncer = new MTPSyncer(host.MainWindow, mtpSourceFolder);
 
             m_host.MainWindow.FileOpened += syncer.OpenFileHandler;
 
@@ -90,7 +86,7 @@ namespace MTPSync
 
         private void ShowUriForm(object sender, EventArgs e, Action<object, EventArgs> callBack)
         {
-            UriForm uriForm = new UriForm(mtpSourceFolder);
+            UriForm uriForm = new UriForm(mtpSourceFolder, syncer.mtpClient);
 
             uriForm.ShowDialog();
 
