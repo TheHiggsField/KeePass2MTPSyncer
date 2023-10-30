@@ -199,7 +199,7 @@ namespace MTPSync
                 deviceName = segments[1];
 
                 if (!string.IsNullOrEmpty(segments[1]))
-                    mtpRelativePath = path.Substring(("This Pc" + Path.DirectorySeparatorChar + segments[1] + Path.DirectorySeparatorChar).Length);
+                    mtpRelativePath = path.Substring(Path.Combine("This PC", segments[1]).Length + 1); // "+1 for \ or /"
                 else
                     return null;
             }

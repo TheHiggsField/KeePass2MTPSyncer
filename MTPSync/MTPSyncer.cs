@@ -19,7 +19,7 @@ namespace MTPSync
     {
         private readonly MainForm mainWindow = null;
         
-        private readonly string tempFolder = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + "/KeePass/TempDBs/";
+        private readonly string tempFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "KeePass", "TempDBs");
 
         public IMTPClient mtpClient {  get; private set; }
 
@@ -65,13 +65,13 @@ namespace MTPSync
 
                 // Even if not copied the version in temp might not have been synced yet
                 // if the Master password wasn't available, when it was copied.
-                bool wasSynced = SyncLocalDatabaseFiles(pwDB, tempFolder + tempFileName) && copiedFileNames.Contains(tempFileName);
+                bool wasSynced = SyncLocalDatabaseFiles(pwDB, Path.Combine(tempFolder, tempFileName)) && copiedFileNames.Contains(tempFileName);
 
                 bool wasCopiedToPhone = false;
 
                 if (wasSynced)
                 {
-                    wasCopiedToPhone = mtpClient.Upload(tempFolder + tempFileName, mtpSourceFolder + tempFileName);
+                    wasCopiedToPhone = mtpClient.Upload(Path.Combine(tempFolder, tempFileName), Path.Combine(mtpSourceFolder, tempFileName));
                 }
 
                 Console.WriteLine("Syncing: " + tempFileName + $"\t\tPhone->PC {boolToMessage(wasSynced)}\tPC->Phone {boolToMessage(wasCopiedToPhone)}");
@@ -99,7 +99,10 @@ namespace MTPSync
             bool success = true;
             foreach (var filename in DBNames)
             {
-                var wasDownloaded = mtpClient.Download(mtpSourceFolder + filename, tempFolder + filename);
+                var wasDownloaded = mtpClient.Download(
+                    Path.Combine(mtpSourceFolder, filename),
+                    Path.Combine(tempFolder, filename)
+                );
                 
                 success = wasDownloaded && success;
 
@@ -123,13 +126,27 @@ namespace MTPSync
 
                 Guid guid = pwDb?.ReadDatabasePublicGuid() ?? default;
 
-                if (guid != default)
-                    dBsInTemp.Add(guid, Path.GetFileName(filePath));
-                else
-                    success = false;
+                success &= UpdateDbFileNameDictionary(dBsInTemp, guid, filePath);
             }
 
             return success;
+        }
+
+        private bool UpdateDbFileNameDictionary(Dictionary<Guid, string> dbDict, Guid dbGuid, string dbFilePath)
+        {
+            if (dbGuid == default)
+                return false;
+
+            if (dbDict.ContainsKey(dbGuid) )
+            {
+                bool shouldReplaceFileName = File.GetLastWriteTime(dbFilePath) > File.GetLastWriteTime(dbDict[dbGuid]);
+
+                dbFilePath = shouldReplaceFileName ? dbFilePath : dbDict[dbGuid];
+            }
+
+            dbDict[dbGuid] = Path.GetFileName(dbFilePath);
+
+            return true;
         }
 
         private bool SyncLocalDatabaseFiles(PwDatabase pwDB, string filePath)

@@ -11,7 +11,7 @@ namespace MTPSync
         private Button btnSave;
         private TableLayoutPanel layout;
 
-        private readonly IMTPClient mTPClient;
+        private readonly IMTPClient mtpClient;
 
         public string UriResult { get; private set; } = null;
 
@@ -20,7 +20,7 @@ namespace MTPSync
             InitializeComponent();
 
             tbxUri.Text = _currentUri;
-            mTPClient = _mTPClient;
+            mtpClient = _mTPClient;
         }
 
         private void InitializeComponent()
@@ -78,7 +78,7 @@ namespace MTPSync
             // Button click event handler
             string uri = tbxUri.Text;
 
-            if (mTPClient.IsFolder(uri) != true)
+            if (mtpClient.IsFolder(uri) != true)
             {
                 MessageBox.Show("The path/URI was not found, or is not a Directory.", "Path/URI not found");
                 return;
