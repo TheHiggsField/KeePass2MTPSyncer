@@ -19,7 +19,11 @@ namespace MTPSync
     {
         private readonly MainForm mainWindow = null;
         
-        private readonly string tempFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "KeePass", "TempDBs");
+        private readonly string tempFolder = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), 
+            "KeePass", 
+            "TempDBs"
+        );
 
         public IMTPClient mtpClient {  get; private set; }
 
@@ -71,7 +75,10 @@ namespace MTPSync
 
                 if (wasSynced)
                 {
-                    wasCopiedToPhone = mtpClient.Upload(Path.Combine(tempFolder, tempFileName), Path.Combine(mtpSourceFolder, tempFileName));
+                    wasCopiedToPhone = mtpClient.Upload(
+                        Path.Combine(tempFolder, tempFileName), 
+                        Path.Combine(mtpSourceFolder, tempFileName)
+                    );
                 }
 
                 Console.WriteLine("Syncing: " + tempFileName + $"\t\tPhone->PC {boolToMessage(wasSynced)}\tPC->Phone {boolToMessage(wasCopiedToPhone)}");
@@ -106,7 +113,7 @@ namespace MTPSync
                 
                 success = wasDownloaded && success;
 
-                if(success)
+                if(wasDownloaded)
                 {
                     downloadedDBFiles.Add(filename);
                 }
