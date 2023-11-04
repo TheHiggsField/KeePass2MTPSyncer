@@ -13,6 +13,8 @@ namespace MTPSync
         
         string mtpSourceFolderKey = "MTPSync.MtpDevice.DatabaseFolder";
 
+        public override string UpdateUrl => "https://raw.githubusercontent.com/TheHiggsField/KeePass2MTPSyncer/Windows/MTPSync/VersionInfo.txt";
+
         [System.Runtime.InteropServices.DllImport("kernel32.dll", SetLastError = true)]
         static extern bool AllocConsole();
 
