@@ -199,12 +199,11 @@ namespace MTPSync
             {
                 case PlatformID.Unix:
                     return new GioClient(path);
-                case PlatformID.Win32NT:
-                    return new MediaDeviceClient(path);
+                //case PlatformID.Win32NT:
+                //    return new MediaDeviceClient(path);
                 default:
                 {
-                    Debug.Assert(false, "No MTP client found for you OS");
-                    return null;
+                    return new HttpMtpClient(path);
                 }
             }
         }

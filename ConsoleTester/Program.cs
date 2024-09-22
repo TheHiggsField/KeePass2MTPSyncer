@@ -8,7 +8,7 @@ namespace ConsoleApp1
         static void Main(string[] args)
         {
 
-            var client = new MTPSync.HttpMtpClient();
+            var client = new MTPSync.HttpMtpClient(null);
 
             Console.WriteLine("Starting");
 
@@ -17,7 +17,7 @@ namespace ConsoleApp1
             Console.WriteLine(String.Join(">=<",client.List(null)));
 
             //client.Download("test.txt", "test.txt");
-            client.Upload("test.txt", "test.txt");
+            client.Download("GeneralKeepassCommon.kdbx", "GeneralKeepassCommon.kdbx");
 
             Console.WriteLine("program finished");
             Console.ReadLine();

@@ -26,6 +26,23 @@ namespace MTPSync
         private readonly String serviceKey = "two-girls-and-a-cat._http._tcp.local.";
         private readonly String serviceType = "_http._tcp.local.";
 
+        public HttpMtpClient(string path)
+        {
+            if (!String.IsNullOrEmpty(path))
+            {
+                try
+                {
+                    var uri = new Uri(path.Replace('\\', '/'));
+                    serverIP = uri.Host;
+                    serverPort = uri.Port;
+                }
+                catch 
+                { //If we can't use it, let the program continue, so the user has a chance to fix it.
+                    
+                }
+            }
+        }
+
 
         public async Task<bool> TryDiscoverServer(string mtpPath)
         {
@@ -51,18 +68,25 @@ namespace MTPSync
 
         public bool Download(string mtpPath, string localPath)
         {
-            var fileName = mtpPath;
+            var fileName = Path.GetFileName(mtpPath);
 
-            Console.WriteLine($"{EndPoint}/upload/{fileName}");
+            Console.WriteLine($"{EndPoint}/download/{fileName}");
+
             var response = httpClient.GetAsync($"{EndPoint}/download/{fileName}").GetAwaiter().GetResult();
 
-            using (var fs = new FileStream(localPath, FileMode.Truncate))
+            if (response.IsSuccessStatusCode)
             {
-                response.Content.CopyToAsync(fs).Wait();
+                using (var fs = new FileStream(localPath, FileMode.Create))
+                {
+
+                    response.Content.CopyToAsync(fs).Wait();
+                }
+                return true;
             }
-
-
-            return true;
+            else
+            {
+                return false;
+            }
         }
 
         public bool Upload(string localPath, string mtpPath)
@@ -72,7 +96,7 @@ namespace MTPSync
 
             switch (Path.GetExtension(localPath))
             {
-                case ".kbdx":
+                case ".kdbx":
                     mimeType = "application/octet-stream";
                     break;
                 case ".txt":
