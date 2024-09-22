@@ -8,27 +8,19 @@ namespace ConsoleApp1
         static void Main(string[] args)
         {
 
+            var client = new MTPSync.HttpMtpClient();
 
-            string path = @"This PC\Internal shared storage\Download\";
-            var client = new MTPSync.MediaDeviceClient(path);
+            Console.WriteLine("Starting");
 
+            Console.WriteLine($"Is connected = {client.IsConnected}");
 
-            Console.WriteLine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
+            Console.WriteLine(String.Join(">=<",client.List(null)));
 
-            foreach (var item in client.List(path))
-            {
-                Console.WriteLine(
-                    "item ="
-                );
-                Console.WriteLine(
-                    item
-                );
+            //client.Download("test.txt", "test.txt");
+            client.Upload("test.txt", "test.txt");
 
-                if ( Path.GetExtension(item) == ".kdbx")
-                    client.Download(path + item, @"C:\Users\rune\Desktop\" + item);
-            }
-
-            while (true);
+            Console.WriteLine("program finished");
+            Console.ReadLine();
 
         }
     }

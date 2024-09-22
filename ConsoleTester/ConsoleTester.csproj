@@ -46,7 +46,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\\MTPSync\\MTPSync.csproj" />
+    <ProjectReference Include="..\MTPSync\MTPSync.csproj">
+      <Project>{EA613200-BF0A-4E2C-BC07-DF66208CC281}</Project>
+      <Name>MTPSync</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Program.cs" />
