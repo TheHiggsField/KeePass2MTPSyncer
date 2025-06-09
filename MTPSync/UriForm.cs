@@ -11,11 +11,11 @@ namespace MTPSync
         private Button btnSave;
         private TableLayoutPanel layout;
 
-        private readonly IMTPClient mtpClient;
+        private readonly ITransferClient mtpClient;
 
         public string UriResult { get; private set; } = null;
 
-        public UriForm(string _currentUri, IMTPClient _mTPClient)
+        public UriForm(string _currentUri, ITransferClient _mTPClient)
         {
             InitializeComponent();
 
@@ -84,7 +84,7 @@ namespace MTPSync
                 return;
             }
 
-            if (!uri.EndsWith(Path.DirectorySeparatorChar.ToString()))
+            if (!uri.EndsWith(Path.DirectorySeparatorChar.ToString()) && !uri.StartsWith("http"))
                 uri += Path.DirectorySeparatorChar;
 
             UriResult = uri;

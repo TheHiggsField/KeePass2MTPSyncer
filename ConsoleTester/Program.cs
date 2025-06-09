@@ -8,7 +8,7 @@ namespace ConsoleApp1
         static void Main(string[] args)
         {
 
-            var client = new MTPSync.HttpMtpClient(null);
+            var client = new MTPSync.HttpTransferClient(null);
 
             Console.WriteLine("Starting");
 

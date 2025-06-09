@@ -4,14 +4,14 @@ using System.Diagnostics;
 
 namespace MTPSync
 {
-    public class GioClient: IMTPClient
+    public class GioTransferClient: ITransferClient
     {
         public List<string> Output {get; set;} = new List<string>();
         public List<string> Error {get; set;} = new List<string>();
 
         private string mtpUriFromInitialize = string.Empty;
 
-        public GioClient(string mtpUri)
+        public GioTransferClient(string mtpUri)
         {
             Debug.Assert(Run("--version"), "The plugin only works for Linux systems, with the GIO CLI.");
             mtpUriFromInitialize += mtpUri;

@@ -7,13 +7,13 @@ using System.Diagnostics;
 
 namespace MTPSync
 {
-    public class MediaDeviceClient : IMTPClient
+    public class MediaDeviceTransferClient : ITransferClient
     {
         private MediaDevice device;
 
         private bool Initialized => device != null;
 
-        public MediaDeviceClient(string mtpPath)
+        public MediaDeviceTransferClient(string mtpPath)
         {
             RelativePath(mtpPath, out var deviceName);
 

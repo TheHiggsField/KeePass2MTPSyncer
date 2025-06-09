@@ -48,11 +48,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="HttpMtpCLient.cs" />
+    <Compile Include="HttpTransferClient.cs" />
     <Compile Include="MTPSyncExt.cs" />
-    <Compile Include="GioClient.cs" />
+    <Compile Include="GioTransferClient.cs" />
     <Compile Include="MediaDevicesClient.cs" />
-    <Compile Include="IMTPClient.cs" />
+    <Compile Include="ITransferClient.cs" />
     <Compile Include="MTPSyncer.cs" />
     <Compile Include="PwDatabaseExtension.cs" />
     <Compile Include="UriForm.cs">

@@ -25,7 +25,7 @@ namespace MTPSync
             "TempDBs"
         );
 
-        public IMTPClient mtpClient {  get; private set; }
+        public ITransferClient mtpClient {  get; private set; }
 
         public MTPSyncer(MainForm _mainForm, string mtpFolder)
         {
@@ -94,7 +94,7 @@ namespace MTPSync
             return AllSynced;
         }
 
-        public bool CopyDBsToTemp(IMTPClient mtpClient, string mtpSourceFolder, out List<string> downloadedDBFiles)
+        public bool CopyDBsToTemp(ITransferClient mtpClient, string mtpSourceFolder, out List<string> downloadedDBFiles)
         {
             downloadedDBFiles = new List<string>();
 
@@ -193,19 +193,21 @@ namespace MTPSync
             e.Database.SetDatabasePublicGuid();
         }
 
-        public static IMTPClient GetMTPClient(string path)
+        public static ITransferClient GetMTPClient(string path)
         {
-            switch (Environment.OSVersion.Platform)
+            return new HttpTransferClient(path);
+
+            /*switch (Environment.OSVersion.Platform)
             {
                 case PlatformID.Unix:
-                    return new GioClient(path);
+                    return new GioTransferClient(path);
                 //case PlatformID.Win32NT:
                 //    return new MediaDeviceClient(path);
                 default:
                 {
-                    return new HttpMtpClient(path);
+                    return new HttpTransferClient(path);
                 }
-            }
+            }*/
         }
 
     }
