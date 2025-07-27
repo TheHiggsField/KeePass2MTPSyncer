@@ -28,12 +28,21 @@ namespace MTPSync
 
         public ServerConfig(string value)
         {
+            if (Uri.IsWellFormedUriString(value, UriKind.Absolute))
+            {
+                //UriFormatException
+                var uri = new Uri(value);
 
-            var uri = new Uri(value);
-
-            serverIP = uri.Host;
-            serverPort = uri.Port;
-            serverScheme = uri.Scheme;
+                serverIP = uri.Host;
+                serverPort = uri.Port;
+                serverScheme = uri.Scheme;
+            }
+            else
+            {
+                serverIP = string.Empty;
+                serverPort = null;
+                serverScheme = string.Empty;
+            }
         }
 
         public bool serverDiscovered => (
