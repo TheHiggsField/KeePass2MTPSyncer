@@ -3,11 +3,12 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Net.Sockets;
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 using Zeroconf;
 
 namespace MTPSync
@@ -59,13 +60,18 @@ namespace MTPSync
 
     public class HttpTransferClient : ITransferClient
     {
+
+        private List<string> trustedCertList = new List<string>();
+
         private readonly HttpClient httpClient = new HttpClient(
             new HttpClientHandler()
             {
                 ServerCertificateCustomValidationCallback =
                 (httpRequestMessage, cert, cetChain, policyErrors) =>
                 {
+
                     return true;
+
                 }
             }
         )
@@ -89,13 +95,14 @@ namespace MTPSync
 
         public HttpTransferClient(string path)
         {
-            if (!String.IsNullOrEmpty(path))
+            if (!string.IsNullOrEmpty(path))
             {
                 var config = new ServerConfig(path.Replace('\\', '/'));
 
                 if (config.serverDiscovered)
                 {
                     serverConfig = config;
+                    bool result = VerifyServerCert().Result;
                 }
 
             }
@@ -204,6 +211,58 @@ namespace MTPSync
             return listStr.Split(';').ToList();
         }
 
+
+        /*
+         {
+            UUID:"c5913314-76ef-41ed-aa1f-0b1e3026e916",
+            certificate-sha-256-hash:"23a0642e1f7b259e037e0735cedd11f45228bb36325510d7230003cdf88ac3c0",
+            signature:"c90e843fa14a74e785c0f64f145fdad0e4f465eff4c819e5b04783383221fc4b"
+            signature-version:v0
+        }
+         */
+        public class SignedCertResponse
+        {
+            public string UUID { get; set; }
+            [JsonProperty("certificate-sha-256-hash")]
+            public string certificate_sha_256_hash { get; set; }
+            public string signature { get; set; }
+            [JsonProperty("signature-version")]
+            public string signature_version { get; set; }
+
+            public static SignedCertResponse FromJson(string json)
+            {
+                return JsonConvert.DeserializeObject<SignedCertResponse>(json);
+            }
+        }
+
+        public async Task<bool> VerifyServerCert()
+        {
+            var request = new HttpRequestMessage()
+            {
+                RequestUri = new Uri(serverConfig?.EndPoint + "/cert"),
+                Method = HttpMethod.Get
+            };
+
+            request.Headers.Add("FileShare-UserId", "Desktop");
+            //"{\n    \"UUID\":\"a4c31a69-cbd5-42d8-9195-20ca7df43d3a\",\n    \"certificate-sha-256-hash\":\"23a0642e1f7b259e037e0735cedd11f45228bb36325510d7230003cdf88ac3c0\",\n    signature:\"803188dc71dc534c6426b67b6feaac3cbfae9c1bca0893bc82d1dc4f4114405b\"\n    \"signature-version\":\"v0\"\n}"
+            var response = await httpClient.SendAsync(request).Result.Content.ReadAsStringAsync();
+            response = "{\n    \"UUID\":\"a4c31a69-cbd5-42d8-9195-20ca7df43d3a\",\n    \"certificate-sha-256-hash\":\"23a0642e1f7b259e037e0735cedd11f45228bb36325510d7230003cdf88ac3c0\",\n    \"signature\":\"803188dc71dc534c6426b67b6feaac3cbfae9c1bca0893bc82d1dc4f4114405b\"\n    \"signature-version\":\"v0\"\n}";
+            SignedCertResponse signedMessage = SignedCertResponse.FromJson(response);
+            var sharedKey = "0123456789ABCDEF";
+
+            var expectedSignature = SignMessage(signedMessage.UUID + signedMessage.certificate_sha_256_hash, sharedKey);
+
+            if (expectedSignature == signedMessage.certificate_sha_256_hash)
+            {
+                trustedCertList.Append(signedMessage.certificate_sha_256_hash);
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
         public bool IsConnected
         {
             get
@@ -216,7 +275,6 @@ namespace MTPSync
                 */
 
                 //httpClient.DefaultRequestHeaders.Add("Connection", "close");
-
                 if ((serverConfig?.serverDiscovered ?? false))
                 {
                     try
@@ -236,6 +294,24 @@ namespace MTPSync
             }
         }
 
+        public static string SignMessage(string message, string sharedKey)
+        {
+
+            byte[] messageBytes = Encoding.UTF8.GetBytes(message);
+            byte[] keyBytes = Encoding.UTF8.GetBytes(sharedKey);
+            SHA256Managed hashstring = new SHA256Managed();
+            byte[] hash = hashstring.ComputeHash(messageBytes.Concat(keyBytes).ToArray());
+            hash = hashstring.ComputeHash(keyBytes.Concat(hash).ToArray());
+            string hashString = string.Empty;
+
+            foreach (byte x in hash)
+            {
+                hashString += string.Format("{0:x2}", x);
+            }
+
+            return hashString;
+        }
+
         /// <summary>
         /// This doesn't really make sense for this client, so just check if it works as the base adresse.
         /// </summary>
@@ -244,6 +320,7 @@ namespace MTPSync
         public bool IsFolder(string mtpPath)
         {
             var currentConfig  = serverConfig;
+            bool result = VerifyServerCert().Result;
 
             serverConfig = new ServerConfig(mtpPath);
 
