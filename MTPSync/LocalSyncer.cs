@@ -1,7 +1,5 @@
 using System;
-using System.CodeDom;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 
@@ -12,10 +10,10 @@ using KeePass.Resources;
 using KeePassLib;
 using KeePassLib.Serialization;
 
-namespace MTPSync
+namespace LocalSync
 {
 
-    public class MTPSyncer
+    public class LocalSyncer
     {
         private readonly MainForm mainWindow = null;
         
@@ -25,13 +23,13 @@ namespace MTPSync
             "TempDBs"
         );
 
-        public ITransferClient mtpClient {  get; private set; }
+        public ITransferClient transferClient {  get; private set; }
 
-        public MTPSyncer(MainForm _mainForm, string mtpFolder)
+        public LocalSyncer(MainForm _mainForm, string mtpFolder)
         {
             mainWindow = _mainForm;
 
-            mtpClient = GetMTPClient(mtpFolder);
+            transferClient = GetMTPClient(mtpFolder);
 
             Directory.CreateDirectory(tempFolder);
         }
@@ -39,18 +37,18 @@ namespace MTPSync
         public bool SyncDatabases(string mtpSourceFolder)
         {
 
-            if (mtpClient?.IsConnected != true)
+            if (transferClient?.IsConnected != true)
             {
-                mtpClient?.IsFolder(mtpSourceFolder);
+                transferClient?.IsFolder(mtpSourceFolder);
 
-                if (mtpClient?.IsConnected != true)
+                if (transferClient?.IsConnected != true)
                 {
                     mainWindow.SetStatusEx("Mtp device is not found!");
                     return false;
                 }
             }
 
-            CopyDBsToTemp(mtpClient, mtpSourceFolder, out var copiedFileNames);
+            CopyDBsToTemp(transferClient, mtpSourceFolder, out var copiedFileNames);
 
             GetDBsFromTemp(out var dBsFromTemp);
 
@@ -75,8 +73,8 @@ namespace MTPSync
 
                 if (wasSynced)
                 {
-                    wasCopiedToPhone = mtpClient.Upload(
-                        Path.Combine(tempFolder, tempFileName), 
+                    wasCopiedToPhone = transferClient.Upload(
+                        Path.Combine(tempFolder, tempFileName),
                         Path.Combine(mtpSourceFolder, tempFileName)
                     );
                 }

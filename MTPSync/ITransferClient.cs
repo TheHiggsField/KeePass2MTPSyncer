@@ -1,17 +1,16 @@
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
-namespace MTPSync
+namespace LocalSync
 {
     public interface ITransferClient
     {
-        bool Download(string mtpPath, string localPath);
-        bool Upload(string localPath, string mtpPath);
+        Task<bool> Download(string serverUri, string localUri);
+        Task<bool> Upload(string localUri, string serverUri);
 
-        List<string> List(string mtpPath);
+        List<string> List(string serverUri);
 
-        bool IsConnected { get; }
-
-        bool IsFolder(string mtpPath);
+        Task<bool> IsConnected { get; }
 
     }
 }

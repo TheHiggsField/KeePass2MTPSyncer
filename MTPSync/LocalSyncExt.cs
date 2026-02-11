@@ -4,12 +4,12 @@ using System.Windows.Forms;
 using KeePass;
 using KeePass.Plugins;
 
-namespace MTPSync
+namespace LocalSync
 {
-	public sealed class MTPSyncExt : Plugin
+	public sealed class LocalSyncExt : Plugin
 	{
 		private IPluginHost m_host = null;
-        private MTPSyncer syncer;
+        private LocalSyncer syncer;
         
         string mtpSourceFolderKey = "MTPSync.MtpDevice.DatabaseFolder";
 
@@ -33,7 +33,7 @@ namespace MTPSync
 			if(host == null) return false;
 			m_host = host;
 
-            syncer = new MTPSyncer(host.MainWindow, mtpSourceFolder);
+            syncer = new LocalSyncer(host.MainWindow, mtpSourceFolder);
 
             m_host.MainWindow.FileOpened += syncer.OpenFileHandler;
 
@@ -70,7 +70,7 @@ namespace MTPSync
             return null; // No menu items in other locations
         }
 
-        private void OnSyncDBsClicked(object sender, EventArgs e)
+        private async void OnSyncDBsClicked(object sender, EventArgs e)
         {
             if (string.IsNullOrEmpty(mtpSourceFolder))
             {

@@ -3,7 +3,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using KeePassLib;
 
-namespace MTPSync
+namespace LocalSync
 {
     public static class PwDatabaseExtension
     {

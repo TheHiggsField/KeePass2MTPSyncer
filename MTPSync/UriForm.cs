@@ -2,7 +2,7 @@ using System;
 using System.IO;
 using System.Windows.Forms;
 
-namespace MTPSync
+namespace LocalSync
 {
     public partial class UriForm : Form
     {

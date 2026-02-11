@@ -9,9 +9,8 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
-using Zeroconf;
 
-namespace MTPSync
+namespace LocalSync
 {
     public struct ServiceConfig
     {
@@ -108,40 +107,9 @@ namespace MTPSync
             }
         }
 
-        public async Task<bool> TryDiscoverServer(string mtpPath)
+        public bool Download(string serverUri, string localUri)
         {
-            serverConfig = await tryDiscoverServiceType(httpsServiceConfig) ?? await tryDiscoverServiceType(httpServiceConfig);
-
-            Console.WriteLine(serverConfig?.EndPoint ?? null);
-            return serverConfig != null;
-        }
-
-        private async Task<ServerConfig?> tryDiscoverServiceType(ServiceConfig serviceConfig)
-        {
-            var results = await ZeroconfResolver.ResolveAsync(serviceConfig.Type);
-
-            if (results == null || results.Count == 0)
-                return null;
-
-            var host = results.FirstOrDefault(x => x.DisplayName == serviceConfig.Name);
-
-            IService service = null;
-
-            host?.Services.TryGetValue(serviceConfig.Key, out service);
-            
-            var res = new ServerConfig()
-            {
-                serverIP = host?.IPAddress,
-                serverPort = service?.Port,
-                serverScheme = serviceConfig.Scheme
-            };
-
-            return res.serverDiscovered ? (ServerConfig?)res : null;
-        }
-
-        public bool Download(string mtpPath, string localPath)
-        {
-            var fileName = Path.GetFileName(mtpPath);
+            var fileName = Path.GetFileName(serverUri);
 
             Console.WriteLine($"{serverConfig?.EndPoint}/download/{fileName}");
 
@@ -149,7 +117,7 @@ namespace MTPSync
 
             if (response.IsSuccessStatusCode)
             {
-                using (var fs = new FileStream(localPath, FileMode.Create))
+                using (var fs = new FileStream(localUri, FileMode.Create))
                 {
 
                     response.Content.CopyToAsync(fs).Wait();
@@ -162,12 +130,12 @@ namespace MTPSync
             }
         }
 
-        public bool Upload(string localPath, string mtpPath)
+        public bool Upload(string localUri, string serverUri)
         {
-            var fileName = Path.GetFileName(localPath);
+            var fileName = Path.GetFileName(localUri);
             string mimeType = null;
 
-            switch (Path.GetExtension(localPath))
+            switch (Path.GetExtension(localUri))
             {
                 case ".kdbx":
                     mimeType = "application/octet-stream";
@@ -183,7 +151,7 @@ namespace MTPSync
 
             HttpResponseMessage response;
 
-            using (var fileStream = new FileStream(localPath, FileMode.Open))
+            using (var fileStream = new FileStream(localUri, FileMode.Open))
             {
                 //var content = new MultipartFormDataContent();
                 var fileContent = new StreamContent(fileStream);
@@ -202,7 +170,7 @@ namespace MTPSync
             return response.IsSuccessStatusCode;
         }
 
-        public List<string> List(string mtpPath)
+        public List<string> List(string serverUri)
         {
             var response = httpClient.GetAsync(serverConfig?.EndPoint + "/list").GetAwaiter().GetResult();
 
@@ -315,14 +283,14 @@ namespace MTPSync
         /// <summary>
         /// This doesn't really make sense for this client, so just check if it works as the base adresse.
         /// </summary>
-        /// <param name="mtpPath"></param>
+        /// <param name="serverUri"></param>
         /// <returns></returns>
-        public bool IsFolder(string mtpPath)
+        public bool IsFolder(string serverUri)
         {
             var currentConfig  = serverConfig;
             bool result = VerifyServerCert().Result;
 
-            serverConfig = new ServerConfig(mtpPath);
+            serverConfig = new ServerConfig(serverUri);
 
             if (IsConnected)
             {
