@@ -4,7 +4,7 @@ using System.Windows.Forms;
 using KeePass;
 using KeePass.Plugins;
 
-namespace LocalSync
+namespace LocalSync.Extensiton
 {
 	public sealed class LocalSyncExt : Plugin
 	{

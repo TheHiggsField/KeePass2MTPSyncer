@@ -10,7 +10,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 
-namespace LocalSync
+namespace LocalSync.TransferClients.HttpClient
 {
     public struct ServiceConfig
     {

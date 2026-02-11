@@ -48,12 +48,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="HttpTransferClient.cs" />
-    <Compile Include="LocalSyncExt.cs" />
-    <Compile Include="ITransferClient.cs" />
+    <Compile Include="TransferClients\HttpTransferClient\HttpTransferClient.cs" />
+    <Compile Include="KeePassExtension\LocalSyncExt.cs" />
+    <Compile Include="TransferClients\ITransferClient.cs" />
     <Compile Include="LocalSyncer.cs" />
-    <Compile Include="PwDatabaseExtension.cs" />
-    <Compile Include="UriForm.cs">
+    <Compile Include="KeePassExtension\PwDatabaseExtension.cs" />
+    <Compile Include="Forms\UriForm.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />

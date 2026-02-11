@@ -2,7 +2,7 @@ using System;
 using System.IO;
 using System.Windows.Forms;
 
-namespace LocalSync
+namespace LocalSync.Forms
 {
     public partial class UriForm : Form
     {

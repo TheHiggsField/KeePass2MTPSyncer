@@ -10,6 +10,8 @@ using KeePass.Resources;
 using KeePassLib;
 using KeePassLib.Serialization;
 
+using LocalSync.TransferClients;
+
 namespace LocalSync
 {
 
