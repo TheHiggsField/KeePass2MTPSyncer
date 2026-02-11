@@ -244,15 +244,15 @@ namespace MTPSync
             };
 
             request.Headers.Add("FileShare-UserId", "Desktop");
-            //"{\n    \"UUID\":\"a4c31a69-cbd5-42d8-9195-20ca7df43d3a\",\n    \"certificate-sha-256-hash\":\"23a0642e1f7b259e037e0735cedd11f45228bb36325510d7230003cdf88ac3c0\",\n    signature:\"803188dc71dc534c6426b67b6feaac3cbfae9c1bca0893bc82d1dc4f4114405b\"\n    \"signature-version\":\"v0\"\n}"
+
             var response = await httpClient.SendAsync(request).Result.Content.ReadAsStringAsync();
-            response = "{\n    \"UUID\":\"a4c31a69-cbd5-42d8-9195-20ca7df43d3a\",\n    \"certificate-sha-256-hash\":\"23a0642e1f7b259e037e0735cedd11f45228bb36325510d7230003cdf88ac3c0\",\n    \"signature\":\"803188dc71dc534c6426b67b6feaac3cbfae9c1bca0893bc82d1dc4f4114405b\"\n    \"signature-version\":\"v0\"\n}";
+
             SignedCertResponse signedMessage = SignedCertResponse.FromJson(response);
             var sharedKey = "0123456789ABCDEF";
 
             var expectedSignature = SignMessage(signedMessage.UUID + signedMessage.certificate_sha_256_hash, sharedKey);
 
-            if (expectedSignature == signedMessage.certificate_sha_256_hash)
+            if (expectedSignature == signedMessage.signature)
             {
                 trustedCertList.Append(signedMessage.certificate_sha_256_hash);
                 return true;
