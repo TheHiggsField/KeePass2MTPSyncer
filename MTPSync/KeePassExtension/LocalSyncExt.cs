@@ -3,8 +3,9 @@ using System.Windows.Forms;
 
 using KeePass;
 using KeePass.Plugins;
+using LocalSync.Forms;
 
-namespace LocalSync.Extensiton
+namespace LocalSync
 {
 	public sealed class LocalSyncExt : Plugin
 	{
@@ -31,18 +32,16 @@ namespace LocalSync.Extensiton
         public override bool Initialize(IPluginHost host)
 		{
 			if(host == null) return false;
+
 			m_host = host;
 
-            syncer = new LocalSyncer(host.MainWindow, mtpSourceFolder);
-
-            m_host.MainWindow.FileOpened += syncer.OpenFileHandler;
-
+            m_host.MainWindow.FileOpened += LocalSyncer.OpenFileHandler;
             return true;
 		}
 
         public override void Terminate()
         {
-            m_host.MainWindow.FileOpened -= syncer.OpenFileHandler;
+            m_host.MainWindow.FileOpened -= LocalSyncer.OpenFileHandler;
         }
 
         public override ToolStripMenuItem GetMenuItem(PluginMenuType t)
@@ -72,13 +71,13 @@ namespace LocalSync.Extensiton
 
         private async void OnSyncDBsClicked(object sender, EventArgs e)
         {
-            if (string.IsNullOrEmpty(mtpSourceFolder))
+            if (syncer == null)
             {
                 ShowUriForm(sender, e, OnSyncDBsClicked);
                 return;
             }
 
-            syncer.SyncDatabases(mtpSourceFolder);
+            await syncer.SyncDatabases();
         }
 
         private void ShowUriForm(object sender, EventArgs e)
@@ -88,19 +87,22 @@ namespace LocalSync.Extensiton
 
         private void ShowUriForm(object sender, EventArgs e, Action<object, EventArgs> callBack)
         {
-            UriForm uriForm = new UriForm(mtpSourceFolder, syncer.mtpClient);
+            var openDBs = m_host.MainWindow.DocumentManager.GetOpenDatabases();
 
-            uriForm.ShowDialog();
+            using (UriForm uriForm = new UriForm(mtpSourceFolder, openDBs))
+            {
+                uriForm.ShowDialog();
 
-            bool success = !string.IsNullOrEmpty(uriForm.UriResult);
+                if (uriForm.TransferClient == null)
+                    return;
 
-            if (success)
-                mtpSourceFolder = uriForm.UriResult;
+                syncer = new LocalSyncer(m_host.MainWindow, uriForm.TransferClient);
+                mtpSourceFolder = uriForm.ConfigString;
+            }
 
-            uriForm.Dispose();
-
-            if (callBack != null && success)
+            if (callBack != null)
                 callBack(sender, e);
+
         }
 
         private void WindowsIsDumbSoGetMeATerminal(object sender, EventArgs e)

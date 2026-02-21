@@ -25,6 +25,27 @@ namespace LocalSync.Extension
             }
         }
 
+        public static string GetSharedKey(this PwDatabase pwDatabase, string profileName)
+        {
+            var fileShareGroup = pwDatabase.RootGroup.Groups
+                .FirstOrDefault(grp => grp.Name == "FileShare");
+
+            if (fileShareGroup == null)
+                return null;
+
+
+            var sharedkeyEntry = fileShareGroup.Entries.FirstOrDefault(
+                    ent => ent.Strings.ReadSafe(PwDefs.TitleField) == profileName
+                );
+
+            if (sharedkeyEntry == null)
+                return null;
+                
+            var sharedKey = sharedkeyEntry?.Strings?.ReadSafe(PwDefs.PasswordField);
+            
+            return sharedKey;
+        }
+
         public static void SetDatabasePublicGuid(this PwDatabase pwDatabase)
         {
             pwDatabase.PublicCustomData.SetByteArray(DatabasePublicUUIDKey, pwDatabase.GetDatabasePublicGuid().ToByteArray());

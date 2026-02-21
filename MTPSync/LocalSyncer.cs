@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-
+using System.Threading.Tasks;
 using KeePass.DataExchange;
 using KeePass.Forms;
 using KeePass.Resources;
@@ -10,49 +10,35 @@ using KeePass.Resources;
 using KeePassLib;
 using KeePassLib.Serialization;
 
+using LocalSync.Extension;
 using LocalSync.TransferClients;
 
 namespace LocalSync
 {
-
     public class LocalSyncer
     {
         private readonly MainForm mainWindow = null;
-        
-        private readonly string tempFolder = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), 
-            "KeePass", 
-            "TempDBs"
-        );
 
-        public ITransferClient transferClient {  get; private set; }
+        private readonly ITransferClient transferClient;
 
-        public LocalSyncer(MainForm _mainForm, string mtpFolder)
+        public LocalSyncer(MainForm _mainForm, ITransferClient _transferClient)
         {
             mainWindow = _mainForm;
-
-            transferClient = GetMTPClient(mtpFolder);
-
-            Directory.CreateDirectory(tempFolder);
+            transferClient = _transferClient;
         }
 
-        public bool SyncDatabases(string mtpSourceFolder)
+        public async Task<bool> SyncDatabases()
         {
 
-            if (transferClient?.IsConnected != true)
+            if (true != await transferClient?.IsConnected())
             {
-                transferClient?.IsFolder(mtpSourceFolder);
-
-                if (transferClient?.IsConnected != true)
-                {
-                    mainWindow.SetStatusEx("Mtp device is not found!");
-                    return false;
-                }
+                mainWindow.SetStatusEx("Server not found!");
+                return false;
             }
 
-            CopyDBsToTemp(transferClient, mtpSourceFolder, out var copiedFileNames);
+            var copiedFileNames = await CopyDBsToTemp();
 
-            GetDBsFromTemp(out var dBsFromTemp);
+            var dBsFromTemp = GetDBsFromTemp();
 
             var openPwDBs = mainWindow.DocumentManager.GetOpenDatabases();
 
@@ -69,15 +55,15 @@ namespace LocalSync
 
                 // Even if not copied the version in temp might not have been synced yet
                 // if the Master password wasn't available, when it was copied.
-                bool wasSynced = SyncLocalDatabaseFiles(pwDB, Path.Combine(tempFolder, tempFileName)) && copiedFileNames.Contains(tempFileName);
+                bool wasSynced = SyncLocalDatabaseFiles(pwDB, tempFileName) && copiedFileNames.Contains(tempFileName);
 
                 bool wasCopiedToPhone = false;
 
                 if (wasSynced)
                 {
-                    wasCopiedToPhone = transferClient.Upload(
-                        Path.Combine(tempFolder, tempFileName),
-                        Path.Combine(mtpSourceFolder, tempFileName)
+                    wasCopiedToPhone = await transferClient.Upload(
+                        tempFileName,
+                        tempFileName
                     );
                 }
 
@@ -94,21 +80,20 @@ namespace LocalSync
             return AllSynced;
         }
 
-        public bool CopyDBsToTemp(ITransferClient mtpClient, string mtpSourceFolder, out List<string> downloadedDBFiles)
+        public async Task<List<string>> CopyDBsToTemp()
         {
-            downloadedDBFiles = new List<string>();
+            var downloadedDBFiles = new List<string>();
 
-            if (string.IsNullOrEmpty(mtpSourceFolder))
-                return false;
 
-            var DBNames = mtpClient.List(mtpSourceFolder).Where(fn => Path.GetExtension(fn) == ".kdbx").ToList();
+            var listResult = await transferClient.List(null);
+            var DBNames = listResult.Where(fn => Path.GetExtension(fn) == ".kdbx").ToList();
 
             bool success = true;
             foreach (var filename in DBNames)
             {
-                var wasDownloaded = mtpClient.Download(
-                    Path.Combine(mtpSourceFolder, filename),
-                    Path.Combine(tempFolder, filename)
+                var wasDownloaded = await transferClient.Download(
+                    filename,
+                    filename
                 );
                 
                 success = wasDownloaded && success;
@@ -119,15 +104,15 @@ namespace LocalSync
                 }
             }
             
-            return success;
+            return success ? downloadedDBFiles : null;
         }
 
-        private bool GetDBsFromTemp(out Dictionary<Guid, string> dBsInTemp)
+        private Dictionary<Guid, string> GetDBsFromTemp()
         {
             bool success = true;
-            dBsInTemp = new Dictionary<Guid, string>();
+            var dBsInTemp = new Dictionary<Guid, string>();
 
-            foreach (var filePath in Directory.GetFiles(tempFolder))
+            foreach (var filePath in Directory.GetFiles(transferClient.LocalStoreUri))
             {
                 var pwDb = PwDatabase.LoadHeader(IOConnectionInfo.FromPath(filePath));
 
@@ -136,7 +121,7 @@ namespace LocalSync
                 success &= UpdateDbFileNameDictionary(dBsInTemp, guid, filePath);
             }
 
-            return success;
+            return success ? dBsInTemp : null;
         }
 
         private bool UpdateDbFileNameDictionary(Dictionary<Guid, string> dbDict, Guid dbGuid, string dbFilePath)
@@ -158,7 +143,7 @@ namespace LocalSync
 
         private bool SyncLocalDatabaseFiles(PwDatabase pwDB, string filePath)
         {
-            IOConnectionInfo ioc = IOConnectionInfo.FromPath(filePath);
+            IOConnectionInfo ioc = IOConnectionInfo.FromPath(Path.Combine(transferClient.LocalStoreUri, filePath));
 
             bool? ob = null;
 
@@ -187,27 +172,10 @@ namespace LocalSync
             return success ?? false ? "succeeded" : "failed   ";
         }
 
-        internal void OpenFileHandler(object sender, FileOpenedEventArgs e)
+        internal static void OpenFileHandler(object sender, FileOpenedEventArgs e)
         {
             Console.WriteLine($"DatabasePublicGuid ({e.Database.Name}):\n{e.Database.ReadDatabasePublicGuid()}");
             e.Database.SetDatabasePublicGuid();
-        }
-
-        public static ITransferClient GetMTPClient(string path)
-        {
-            return new HttpTransferClient(path);
-
-            /*switch (Environment.OSVersion.Platform)
-            {
-                case PlatformID.Unix:
-                    return new GioTransferClient(path);
-                //case PlatformID.Win32NT:
-                //    return new MediaDeviceClient(path);
-                default:
-                {
-                    return new HttpTransferClient(path);
-                }
-            }*/
         }
 
     }

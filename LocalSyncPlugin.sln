@@ -8,9 +8,9 @@ EndProject
 Project("{911E67C6-3D85-4FCE-B560-20A9C3E3FF48}") = "KeePass", "KeePass-2.54\KeePass.exe", "{AF2C977F-78FC-487E-B37F-842EA26F7764}"
 	ProjectSection(DebuggerProjectSystem) = preProject
 		PortSupplier = 00000000-0000-0000-0000-000000000000
-		Executable = C:\Users\rlr\source\repos\KeePass2MTPSyncer\KeePass-2.54\KeePass.exe
+		Executable = C:\Users\rlr\source\repos\KeePass2MTPSyncer\KeePass-2.57\KeePass.exe
 		RemoteMachine = RLRP14S
-		StartingDirectory = C:\Users\rlr\source\repos\KeePass2MTPSyncer\KeePass-2.54
+		StartingDirectory = C:\Users\rlr\source\repos\KeePass2MTPSyncer\KeePass-2.57
 		Environment = Default
 		LaunchingEngine = 00000000-0000-0000-0000-000000000000
 		UseLegacyDebugEngines = No

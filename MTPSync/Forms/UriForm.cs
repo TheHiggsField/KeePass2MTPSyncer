@@ -1,6 +1,11 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Windows.Forms;
+using KeePassLib;
+using LocalSync.Extension;
+using LocalSync.TransferClients;
 
 namespace LocalSync.Forms
 {
@@ -8,19 +13,24 @@ namespace LocalSync.Forms
     {
         private Label lblPrompt;
         private TextBox tbxUri;
+        private TextBox tbxUserId;
         private Button btnSave;
         private TableLayoutPanel layout;
+        private IList<PwDatabase> pwDatabases;
 
-        private readonly ITransferClient mtpClient;
+        public string ConfigString { get; private set; } = null;
+        private TransferClientFactory transferClientFactory = new TransferClientFactory();
+        public ITransferClient TransferClient { get; private set; } = null;
 
-        public string UriResult { get; private set; } = null;
-
-        public UriForm(string _currentUri, ITransferClient _mTPClient)
+        public UriForm(string ConfigString, IList<PwDatabase> _pwDatabases)
         {
             InitializeComponent();
 
-            tbxUri.Text = _currentUri;
-            mtpClient = _mTPClient;
+            if (!string.IsNullOrWhiteSpace(ConfigString))
+                tbxUri.Text = ConfigString;
+
+            pwDatabases = _pwDatabases;
+
         }
 
         private void InitializeComponent()
@@ -37,8 +47,15 @@ namespace LocalSync.Forms
             // TextBox
             tbxUri = new TextBox()
             {
-                Anchor = AnchorStyles.Right| AnchorStyles.Left,
+                Anchor = AnchorStyles.Right | AnchorStyles.Left,
                 Name = "tbxUri"
+            };
+
+            // TextBox
+            tbxUserId = new TextBox()
+            {
+                Anchor = AnchorStyles.Left,
+                Name = "tbxconfigName"
             };
 
             // SaveButton
@@ -54,13 +71,15 @@ namespace LocalSync.Forms
             layout = new TableLayoutPanel()
             {
                 Dock = DockStyle.Fill,
-                RowCount = 4 // Create a Phantom row to take up extra vertical space
+                RowCount = 5 // Create a Phantom row to take up extra vertical space
             };
 
             layout.Controls.Add(lblPrompt, 0, 0);
             layout.Controls.Add(tbxUri, 0, 1);
-            layout.Controls.Add(btnSave, 0, 2);
+            layout.Controls.Add(tbxUserId, 0, 2);
+            layout.Controls.Add(btnSave, 0, 3);
             layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 20));
+            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 30));
             layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 30));
             layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 30));
 
@@ -70,25 +89,38 @@ namespace LocalSync.Forms
             Padding = new Padding() { Left = 50, Right = 50 };
             MinimumSize = new System.Drawing.Size(600, 130);
             Name = "UriForm";
-            Text = "Enter MTP URI";
+            Text = "Enter Endpoint";
         }
 
-        private void buttonOK_Click(object sender, EventArgs e)
+        private async void buttonOK_Click(object sender, EventArgs e)
         {
             // Button click event handler
             string uri = tbxUri.Text;
+            string userId = tbxUserId.Text;
+            string sharedKey = null;
 
-            if (mtpClient.IsFolder(uri) != true)
+            foreach (var db in pwDatabases)
             {
-                MessageBox.Show("The path/URI was not found, or is not a Directory.", "Path/URI not found");
+                sharedKey = db.GetSharedKey(userId);
+
+                if (sharedKey != null)
+                    break;
+
+            }
+
+
+            transferClientFactory.Errors.Clear();
+            var client = await transferClientFactory.ConfigureHttpTransferClient(uri, userId, sharedKey).Build();
+
+            if (transferClientFactory.Errors.Count != 0)
+            {
+                MessageBox.Show(string.Join("---------------------", transferClientFactory.Errors), "Could not create client");
+                
                 return;
             }
 
-            if (!uri.EndsWith(Path.DirectorySeparatorChar.ToString()) && !uri.StartsWith("http"))
-                uri += Path.DirectorySeparatorChar;
-
-            UriResult = uri;
-
+            TransferClient = client;
+            ConfigString = uri;
             Close();
         }
     }
