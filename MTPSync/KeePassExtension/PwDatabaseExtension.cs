@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Security.Cryptography;
 using KeePassLib;
+using KeePassLib.Security;
 
 namespace LocalSync.Extension
 {
@@ -25,7 +26,7 @@ namespace LocalSync.Extension
             }
         }
 
-        public static string GetSharedKey(this PwDatabase pwDatabase, string profileName)
+        public static ProtectedString GetSharedKey(this PwDatabase pwDatabase, string profileName)
         {
             var fileShareGroup = pwDatabase.RootGroup.Groups
                 .FirstOrDefault(grp => grp.Name == "FileShare");
@@ -40,8 +41,10 @@ namespace LocalSync.Extension
 
             if (sharedkeyEntry == null)
                 return null;
-                
-            var sharedKey = sharedkeyEntry?.Strings?.ReadSafe(PwDefs.PasswordField);
+
+            var sharedKey2 = sharedkeyEntry?.Strings;
+
+            var sharedKey = sharedkeyEntry?.Strings.GetSafe(PwDefs.PasswordField);
             
             return sharedKey;
         }

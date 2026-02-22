@@ -3,6 +3,7 @@ using System;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Linq;
+using KeePassLib.Security;
 
 namespace LocalSync.TransferClients
 {
@@ -15,7 +16,7 @@ namespace LocalSync.TransferClients
     {
         public ClientType? ClientTypeToBuild { get; private set; } = null;
         public string EndPoint { get; private set; } = null;
-        public string SharedKey { get; private set; } = null;
+        public ProtectedString SharedKey { get; private set; } = null;
         public string UserId { get; private set; } = null; 
         public string LocalTempUri { get; private set; } = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -36,7 +37,7 @@ namespace LocalSync.TransferClients
             return this;
         }
 
-        public TransferClientFactory ConfigureHttpTransferClient(string endPoint, string userId, string sharedKey)
+        public TransferClientFactory ConfigureHttpTransferClient(string endPoint, string userId, ProtectedString sharedKey)
         {
 
             if (string.IsNullOrWhiteSpace(endPoint))

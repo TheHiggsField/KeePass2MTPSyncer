@@ -50,6 +50,7 @@
   <ItemGroup>
     <Compile Include="TransferClients\HttpTransferClient\HttpTransferClient.cs" />
     <Compile Include="KeePassExtension\LocalSyncExt.cs" />
+    <Compile Include="TransferClients\HttpTransferClient\HttpTransferClientFactory.cs" />
     <Compile Include="TransferClients\ITransferClient.cs" />
     <Compile Include="LocalSyncer.cs" />
     <Compile Include="KeePassExtension\PwDatabaseExtension.cs" />

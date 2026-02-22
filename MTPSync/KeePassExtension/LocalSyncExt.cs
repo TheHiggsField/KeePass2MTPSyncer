@@ -80,10 +80,7 @@ namespace LocalSync
             await syncer.SyncDatabases();
         }
 
-        private void ShowUriForm(object sender, EventArgs e)
-        {
-            ShowUriForm(sender, e, null);
-        }
+        private void ShowUriForm(object sender, EventArgs e) => ShowUriForm(sender, e, null);
 
         private void ShowUriForm(object sender, EventArgs e, Action<object, EventArgs> callBack)
         {
@@ -100,8 +97,7 @@ namespace LocalSync
                 mtpSourceFolder = uriForm.ConfigString;
             }
 
-            if (callBack != null)
-                callBack(sender, e);
+            callBack?.Invoke(sender, e);
 
         }
 

@@ -10,6 +10,8 @@ using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using System.Security.Cryptography.X509Certificates;
+using KeePassLib.Security;
+
 namespace LocalSync.TransferClients.HttpTransferClient
 {
 
@@ -20,7 +22,7 @@ namespace LocalSync.TransferClients.HttpTransferClient
 
         private readonly HttpClient httpClient;
 
-        private readonly string sharedKey;
+        private readonly ProtectedString sharedKey;
 
         private readonly string userId;
 
@@ -29,7 +31,7 @@ namespace LocalSync.TransferClients.HttpTransferClient
 
         public string LocalStoreUri { get; private set; } = null;
 
-        private HttpTransferClient(string _serverEndPoint, string _userId, string _sharedKey)
+        private HttpTransferClient(string _serverEndPoint, string _userId, ProtectedString _sharedKey)
         {
             serverBaseUri = new Uri(_serverEndPoint);
 
@@ -70,7 +72,7 @@ namespace LocalSync.TransferClients.HttpTransferClient
             };
         }
 
-        public static async Task<HttpTransferClient> Create(string _serverEndPoint, string _localStoreUri, string userId, string sharedKey)
+        public static async Task<HttpTransferClient> Create(string _serverEndPoint, string _localStoreUri, string userId, ProtectedString sharedKey)
         {
 
             if (
@@ -93,6 +95,14 @@ namespace LocalSync.TransferClients.HttpTransferClient
                 var serverCertValidationError = await client.ServerCertValidationError();
                 if (serverCertValidationError != null)
                     throw new CryptographicException($"Could not Verify server Cert:\n{serverCertValidationError}");
+
+                if (!await client.IsConnected())
+                    throw new Exception("Successfully verified certificate from server, but could not very a normal connection afterwards.");
+            }
+            else
+            {
+                if (await client.List(string.Empty) == null)
+                    throw new Exception("The server didn't return a proper response.");
             }
 
             if (string.IsNullOrEmpty(_localStoreUri))
@@ -100,8 +110,6 @@ namespace LocalSync.TransferClients.HttpTransferClient
 
             client.LocalStoreUri = _localStoreUri;
 
-            if (!await client.IsConnected())
-                throw new Exception($"Successfully verified certificate from server, but could not very a normal connection afterwards.");
 
             return client;
         }
@@ -129,14 +137,13 @@ namespace LocalSync.TransferClients.HttpTransferClient
 
             switch (Path.GetExtension(localUri))
             {
-                case ".kdbx":
-                    mimeType = "application/octet-stream";
-                    break;
                 case ".txt":
                     mimeType = "text/plain";
                     break;
+                case ".kdbx":
+                case ".dll":
                 default:
-                    mimeType = "text/plain";
+                    mimeType = "application/octet-stream";
                     break;
 
             }
@@ -153,7 +160,7 @@ namespace LocalSync.TransferClients.HttpTransferClient
                 var fileContent = new StreamContent(fileStream);
 
                 fileContent.Headers.ContentType = MediaTypeHeaderValue.Parse(mimeType);
-                fileContent.Headers.Add("FileShareSignature", SignMessage(buffer, sharedKey));
+                fileContent.Headers.Add("FileShare-Signature", SignMessage(buffer, sharedKey));
                 fileContent.Headers.Add("FileShare-UserId", userId);
 
 
@@ -264,15 +271,19 @@ namespace LocalSync.TransferClients.HttpTransferClient
             }
         }
 
-        public static string SignMessage(string message, string sharedKey)
+        public static string SignMessage(string message, ProtectedString sharedKey)
         {
             byte[] messageBytes = Encoding.UTF8.GetBytes(message);
             return SignMessage(messageBytes, sharedKey);
         }
 
-        public static string SignMessage(byte[] messageBytes, string sharedKey)
+        public static string SignMessage(byte[] messageBytes, ProtectedString sharedKey)
         {
-            byte[] keyBytes = Encoding.UTF8.GetBytes(sharedKey);
+
+            if (sharedKey == null)
+                return "No key available to sign with.";
+
+            byte[] keyBytes = sharedKey.ReadUtf8();
             byte[] hash;
 
             using (SHA256Managed hasher = new SHA256Managed())
