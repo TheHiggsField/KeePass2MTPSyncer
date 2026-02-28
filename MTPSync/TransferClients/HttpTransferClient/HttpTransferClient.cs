@@ -4,13 +4,13 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Security.Cryptography;
 using System.Net.Security;
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
-using System.Security.Cryptography.X509Certificates;
 using KeePassLib.Security;
+using Newtonsoft.Json;
 
 namespace LocalSync.TransferClients.HttpTransferClient
 {
@@ -36,7 +36,7 @@ namespace LocalSync.TransferClients.HttpTransferClient
             serverBaseUri = new Uri(_serverEndPoint);
 
             httpClient = SetupHttpClient(
-                serverBaseUri, (cert) => trustedCertList.Contains(cert.GetCertHashString(HashAlgorithmName.SHA256))
+                serverBaseUri, (certHash) => trustedCertList.Contains(certHash)
             );
 
             sharedKey = _sharedKey;
@@ -71,6 +71,16 @@ namespace LocalSync.TransferClients.HttpTransferClient
                 BaseAddress = serverBaseUri
             };
         }
+
+        private static HttpClient SetupHttpClient(
+            Uri serverBaseUri, Func<string, bool> serverCertificateValidationCallback
+        ) => SetupHttpClient(
+            serverBaseUri,
+            (cert) => serverCertificateValidationCallback(
+                GetHashInHex(cert.GetRawCertData())
+            )
+        );
+
 
         public static async Task<HttpTransferClient> Create(string _serverEndPoint, string _localStoreUri, string userId, ProtectedString sharedKey)
         {
@@ -181,6 +191,18 @@ namespace LocalSync.TransferClients.HttpTransferClient
             return listStr.TrimEnd(';').Split(';').ToList();
         }
 
+        public async Task<bool> IsConnected()
+        {
+            try
+            {
+                return await List(string.Empty) != null;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         /*
          {
             "UUID":"c5913314-76ef-41ed-aa1f-0b1e3026e916",
@@ -214,9 +236,10 @@ namespace LocalSync.TransferClients.HttpTransferClient
 
             using (
                 var unsafeHttpClient = SetupHttpClient(
-                    serverBaseUri, (cert) => {
-                        certHashString = cert.GetCertHashString(HashAlgorithmName.SHA256);
-                        return true; // <-- Unsafe to allow unverified cert
+                    serverBaseUri, (certHash) => {
+                        certHashString = certHash;
+
+                        return true; // <-- Unsafe to allow unverified cert only for initial  validation
                     }
                 )
             ){
@@ -250,24 +273,22 @@ namespace LocalSync.TransferClients.HttpTransferClient
             if (expectedSignature != signedMessage.signature)
                 return $"Actual signature of received message did not match the claimed signature.";
 
-            if (certHashString.ToUpper() != signedMessage.certificate_sha_256_hash.ToUpper())
-                return $"Actual message cert hash '{certHashString.ToUpper()}', " +
-                    $"doesn't match claimed cert hash '{signedMessage.certificate_sha_256_hash.ToUpper()}'.";
+            if (certHashString != signedMessage.certificate_sha_256_hash.ToUpper())
+                return $"Actual message cert hash '{certHashString}', " +
+                    $"doesn't match claimed cert hash '{signedMessage.certificate_sha_256_hash}'.";
 
             trustedCertList.Add(certHashString);
 
             return null;
         }
 
-        public async Task<bool> IsConnected()
+        private static string GetHashInHex(byte[] data)
         {
-            try
+            using (SHA256Managed hasher = new SHA256Managed())
             {
-                return await List(string.Empty) != null;
-            }
-            catch
-            {
-                return false;
+                var hash = hasher.ComputeHash(data);
+
+                return AsHexString(hash);
             }
         }
 
@@ -292,14 +313,19 @@ namespace LocalSync.TransferClients.HttpTransferClient
                 hash = hasher.ComputeHash(keyBytes.Concat(hash).ToArray());
             }
 
-            string hashString = string.Empty;
+            return AsHexString(hash);
+        }
+
+        private static string AsHexString(byte[] hash)
+        {
+            StringBuilder sb = new StringBuilder();
 
             foreach (byte x in hash)
             {
-                hashString += string.Format("{0:x2}", x);
+                sb.Append(string.Format("{0:X2}", x));
             }
 
-            return hashString;
+            return sb.ToString();
         }
 
     }
