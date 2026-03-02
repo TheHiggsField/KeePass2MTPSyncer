@@ -270,7 +270,7 @@ namespace LocalSync.TransferClients.HttpTransferClient
 
             var expectedSignature = SignMessage(signedMessage.UUID + signedMessage.certificate_sha_256_hash, sharedKey);
 
-            if (expectedSignature != signedMessage.signature)
+            if (expectedSignature != signedMessage.signature.ToUpper())
                 return $"Actual signature of received message did not match the claimed signature.";
 
             if (certHashString != signedMessage.certificate_sha_256_hash.ToUpper())
