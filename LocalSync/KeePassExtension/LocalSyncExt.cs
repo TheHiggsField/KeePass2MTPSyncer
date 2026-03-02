@@ -23,7 +23,6 @@ namespace LocalSync
         {
             get => Program.Config.CustomConfig.GetString(localSyncServerConfigKey, string.Empty);
             set { Program.Config.CustomConfig.SetString(localSyncServerConfigKey, value); }
-            }
         }
 
         public override bool Initialize(IPluginHost host)
