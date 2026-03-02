@@ -12,20 +12,17 @@ namespace LocalSync
 		private IPluginHost m_host = null;
         private LocalSyncer syncer;
         
-        string mtpSourceFolderKey = "MTPSync.MtpDevice.DatabaseFolder";
+        string localSyncServerConfigKey = "LocalSync.Server.ServerConfig";
 
-        public override string UpdateUrl => "https://raw.githubusercontent.com/TheHiggsField/KeePass2MTPSyncer/Windows/MTPSync/VersionInfo.txt";
+        public override string UpdateUrl => "https://raw.githubusercontent.com/TheHiggsField/KeePass2MTPSyncer/Windows/LocalSync/VersionInfo.txt";
 
         [System.Runtime.InteropServices.DllImport("kernel32.dll", SetLastError = true)]
         static extern bool AllocConsole();
 
-        private string mtpSourceFolder
+        private string LocalSyncServerConfig
         {
-            get => Program.Config.CustomConfig.GetString(mtpSourceFolderKey, string.Empty);
-
-            set
-            {
-                Program.Config.CustomConfig.SetString(mtpSourceFolderKey, value);
+            get => Program.Config.CustomConfig.GetString(localSyncServerConfigKey, string.Empty);
+            set { Program.Config.CustomConfig.SetString(localSyncServerConfigKey, value); }
             }
         }
 
@@ -52,7 +49,7 @@ namespace LocalSync
                 ToolStripMenuItem mainItem = new ToolStripMenuItem("Sync Databases from Phone");
                 mainItem.Click += OnSyncDBsClicked;
 
-                var uriItem = new ToolStripMenuItem("Update MTP device URI");
+                var uriItem = new ToolStripMenuItem("Update LocalSync Server URI");
                 uriItem.Click += ShowUriForm;
                 mainItem.DropDownItems.Add(uriItem);
 
@@ -86,7 +83,7 @@ namespace LocalSync
         {
             var openDBs = m_host.MainWindow.DocumentManager.GetOpenDatabases();
 
-            using (UriForm uriForm = new UriForm(mtpSourceFolder, openDBs))
+            using (UriForm uriForm = new UriForm(LocalSyncServerConfig, openDBs))
             {
                 uriForm.ShowDialog();
 
@@ -94,7 +91,7 @@ namespace LocalSync
                     return;
 
                 syncer = new LocalSyncer(m_host.MainWindow, uriForm.TransferClient);
-                mtpSourceFolder = uriForm.ConfigString;
+                LocalSyncServerConfig = uriForm.ConfigString;
             }
 
             callBack?.Invoke(sender, e);
