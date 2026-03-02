@@ -14,7 +14,7 @@ namespace LocalSync
         
         string localSyncServerConfigKey = "LocalSync.Server.ServerConfig";
 
-        public override string UpdateUrl => "https://raw.githubusercontent.com/TheHiggsField/KeePass2MTPSyncer/Windows/LocalSync/VersionInfo.txt";
+        public override string UpdateUrl => "https://raw.githubusercontent.com/TheHiggsField/KeePass2MTPSyncer/main-v2/LocalSync/VersionInfo.txt";
 
         [System.Runtime.InteropServices.DllImport("kernel32.dll", SetLastError = true)]
         static extern bool AllocConsole();
